@@ -16,16 +16,24 @@
   /* 간트차트 시각화 */
   .gantt-wrap { background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
   .gantt-header-row { display: flex; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; font-size: 12px; font-weight: 700; color: #475569; align-items: center; }
-  .gantt-time-scale { flex: 1; display: flex; justify-content: space-between; position: relative; padding: 0 4px; }
+  .gantt-time-scale { flex: 1; position: relative; height: 30px; padding: 0 4px; }
   .gantt-time-scale::before { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 1px; background: #e2e8f0; }
-  .scale-mark { font-size: 11px; color: #94a3b8; font-family: monospace; }
+  .scale-mark { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: #64748b; font-family: monospace; line-height: 1.4; text-align: center; white-space: nowrap; }
+  .scale-mark:first-child { transform: translateX(0); text-align: left; }
+  .scale-mark:last-child { transform: translateX(-100%); text-align: right; }
+  .scale-mark .scale-date { display: block; font-size: 10px; color: #94a3b8; font-weight: 400; }
+  .gantt-grid-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .gantt-grid-overlay .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #e8edf3; }
 
   .gantt-item-row { display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; padding: 12px 0; font-size: 13px; }
   .gantt-item-label { width: 260px; flex-shrink: 0; font-weight: 600; color: #1e293b; padding-right: 12px; box-sizing: border-box; }
-  .gantt-timeline-track { flex: 1; position: relative; height: 28px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .gantt-timeline-track { flex: 1; position: relative; height: 34px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; overflow: hidden; }
   
-  .gantt-bar-work { position: absolute; top: 2px; bottom: 2px; border-radius: 4px 0 0 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
-  .gantt-bar-weather { position: absolute; top: 2px; bottom: 2px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 6px, #e2e8f0 6px, #e2e8f0 12px); border-left: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 6px; color: #475569; font-size: 10.5px; font-weight: 700; white-space: nowrap; z-index: 1; }
+  .gantt-bar-work { position: absolute; top: 3px; bottom: 3px; border-radius: 4px 0 0 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), 0 1px 2px rgba(0,0,0,0.15); text-shadow: 0 1px 1px rgba(0,0,0,0.35); }
+  .gantt-bar-work .bar-sub { font-weight: 400; opacity: 0.9; margin-left: 6px; font-size: 10.5px; }
+  .gantt-bar-work.bar-label-outside { color: #1e293b; text-shadow: none; justify-content: flex-start; }
+  .gantt-bar-work.bar-label-outside .bar-text { position: absolute; left: calc(100% + 6px); white-space: nowrap; }
+  .gantt-bar-weather { position: absolute; top: 3px; bottom: 3px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 6px, #e2e8f0 6px, #e2e8f0 12px); border-left: 2px solid #94a3b8; display: flex; align-items: center; padding: 0 6px; color: #334155; font-size: 10.5px; font-weight: 700; white-space: nowrap; z-index: 1; }
 
   .gantt-legend { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #64748b; }
   .legend-box { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 5px; }
@@ -106,7 +114,7 @@
 
         <div class="gantt-header-row">
           <div style="width: 260px;">공종 및 세부 품목명</div>
-          <div class="gantt-time-scale" id="gantt-scale-header"></div>
+          <div class="gantt-time-scale" id="gantt-scale-header" style="padding-left:0; padding-right:0;"></div>
           <div style="width: 140px; text-align: right;">순작업 / 총소요공기</div>
         </div>
 
@@ -417,13 +425,23 @@ function renderGanttChart(projectId) {
   const displayTotalDays = Math.max(totalCalendarDays, maxActualEndDay);
   const isExtended = displayTotalDays > totalCalendarDays;
 
-  scaleHeader.innerHTML = `
-    <span class="scale-mark">착공 (0일)</span>
-    <span class="scale-mark">${Math.round(displayTotalDays * 0.25)}일차</span>
-    <span class="scale-mark">${Math.round(displayTotalDays * 0.5)}일차</span>
-    <span class="scale-mark">${Math.round(displayTotalDays * 0.75)}일차</span>
-    <span class="scale-mark">${isExtended ? `실적 반영 최종 (${displayTotalDays}일차)` : `최종 준공 (${displayTotalDays}일차)`}</span>
-  `;
+  const scaleFractions = [0, 0.25, 0.5, 0.75, 1];
+  const scaleLabels = ['착공', '25%', '50%', '75%', isExtended ? '실적반영 최종' : '최종 준공'];
+  const safeAddDays = (base, n) => {
+    if (!base) return '';
+    try {
+      const d = new Date(base);
+      d.setDate(d.getDate() + Math.round(n));
+      return fmtDate(d);
+    } catch (e) { return ''; }
+  };
+  scaleHeader.innerHTML = scaleFractions.map((f, i) => {
+    const dayN = Math.round(displayTotalDays * f);
+    const dateStr = safeAddDays(projStart, dayN);
+    return `<span class="scale-mark" style="left:${(f * 100).toFixed(2)}%;">${scaleLabels[i]} (${dayN}일차)${dateStr ? `<span class="scale-date">${dateStr}</span>` : ''}</span>`;
+  }).join('');
+
+  const gridLinesHtml = [0.25, 0.5, 0.75].map(f => `<div class="grid-line" style="left:${(f * 100).toFixed(2)}%;"></div>`).join('');
 
   // 4단계: 겹치는 실적 막대를 세로로 쌓기 위한 레인(lane) 배정
   const activeActuals = actuals.filter(Boolean);
@@ -445,11 +463,13 @@ function renderGanttChart(projectId) {
     const nonWorkWidthPct = ((item.nonWorkDays / displayTotalDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
 
+    const isNarrow = parseFloat(workWidthPct) < 8;
+    const labelText = `${item.name} (${item.netDays}일)`;
     combinedPlannedBars.push(`
-      <div class="gantt-bar-work" 
+      <div class="gantt-bar-work${isNarrow ? ' bar-label-outside' : ''}" 
            style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
            title="${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
-        ${item.name} (${item.netDays}일)
+        ${isNarrow ? `<span class="bar-text">${labelText}</span>` : labelText}
       </div>
       <div class="gantt-bar-weather" 
            style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
@@ -498,6 +518,7 @@ function renderGanttChart(projectId) {
       <div class="gantt-item-row">
         <div class="gantt-item-label"><strong>계획 (전체 공종)</strong></div>
         <div class="gantt-timeline-track" style="height:30px;">
+          <div class="gantt-grid-overlay">${gridLinesHtml}</div>
           ${isExtended ? `<div class="gantt-plan-end-marker" style="left:${planEndMarkerPct}%;"></div>` : ''}
           ${combinedPlannedBars.join('')}
         </div>
@@ -515,6 +536,7 @@ function renderGanttChart(projectId) {
           <strong>실적 (전체 공종 통합)</strong>
         </div>
         <div class="gantt-actual-track" style="height:${trackHeight}px;">
+          <div class="gantt-grid-overlay">${gridLinesHtml}</div>
           ${isExtended ? `<div class="gantt-plan-end-marker" style="left:${planEndMarkerPct}%;" title="계획상 최종 준공 시점"></div>` : ''}
           ${combinedActualBars.length ? combinedActualBars.join('') : '<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#cbd5e1;">입력된 실적이 없습니다. 아래 공종 목록에서 \'실적 입력\'을 눌러 등록하세요.</span>'}
         </div>
