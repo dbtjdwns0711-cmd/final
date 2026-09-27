@@ -30,6 +30,23 @@
   .gantt-legend { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #64748b; }
   .legend-box { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 5px; }
 
+  /* 계획 vs 실적 비교 */
+  .gantt-item-block { border-bottom: 1px solid #f1f5f9; padding: 10px 0; }
+  .gantt-item-block .gantt-item-row { border-bottom: none; padding: 4px 0; }
+  .gantt-actual-row { display: flex; align-items: center; padding: 4px 0; font-size: 12px; }
+  .gantt-actual-label { width: 260px; flex-shrink: 0; padding-right: 12px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; }
+  .gantt-actual-track { flex: 1; position: relative; height: 20px; background: #fafafa; border-radius: 4px; border: 1px dashed #e2e8f0; overflow: hidden; }
+  .gantt-bar-actual { position: absolute; top: 2px; bottom: 2px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .actual-status-badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .status-ontime { background:#ecfdf5; color:#059669; }
+  .status-delay { background:#fef2f2; color:#dc2626; }
+  .status-progress { background:#eff6ff; color:#2563eb; }
+  .status-none { background:#f1f5f9; color:#94a3b8; }
+  .btn-edit-actual { font-size:11px; color:#2563eb; background:none; border:1px solid #bfdbfe; border-radius:5px; padding:2px 7px; cursor:pointer; }
+  .actual-edit-panel { display:flex; align-items:center; gap:10px; padding:8px 0 8px 260px; font-size:12px; }
+  .actual-edit-panel input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #cbd5e1; border-radius:4px; }
+  .actual-edit-panel .btn-sm-mini { font-size:11px; padding:3px 9px; border-radius:4px; cursor:pointer; }
+
   /* 모달 */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
   .modal-dialog { background: #fff; border-radius: 8px; width: 540px; max-width: 90vw; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
@@ -68,6 +85,9 @@
             <div class="gantt-legend">
               <span><span class="legend-box" style="background:#2563eb;"></span>순 작업일수(Net)</span>
               <span><span class="legend-box" style="background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px);"></span>10년 평균 비작업일</span>
+              <span style="border-left:1px solid #e2e8f0; padding-left:16px;"><span class="legend-box" style="background:#2563eb;"></span>실적(진행중)</span>
+              <span><span class="legend-box" style="background:#059669;"></span>실적(정상완료)</span>
+              <span><span class="legend-box" style="background:#dc2626;"></span>실적(지연)</span>
             </div>
             <select id="sel-gantt-project" class="input" style="width: 240px; font-size: 13px; font-weight:600;" onchange="renderGanttChart(this.value)"></select>
           </div>
@@ -373,6 +393,8 @@ function renderGanttChart(projectId) {
 
   let currentOffsetDay = 0;
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
+  const projStart = curProj ? curProj.startDate : null;
+  const todayStr = fmtDate(new Date());
 
   body.innerHTML = scheduleChain.map((item, idx) => {
     const startDay = currentOffsetDay;
@@ -385,32 +407,158 @@ function renderGanttChart(projectId) {
     const nonWorkWidthPct = ((item.nonWorkDays / totalCalendarDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
 
+    // 계획상 실제 달력 날짜 (현장 착공일 기준 환산)
+    const plannedStartDate = projStart ? addDays(projStart, startDay) : null;
+    const plannedEndDate = projStart ? addDays(projStart, finalEndDay - 1) : null;
+
+    // 실적(착공일/완료일) 및 상태 계산
+    const actual = getActualBarInfo(item, projStart, plannedEndDate, totalCalendarDays, todayStr);
+
     return `
-      <div class="gantt-item-row">
-        <div class="gantt-item-label" title="${item.name}">
-          <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${item.category || '공종'}</span>
-          ${item.name}
-        </div>
-        <div class="gantt-timeline-track">
-          <div class="gantt-bar-work" 
-               style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
-               title="${item.name}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
-            ${item.name} (${item.netDays}일)
+      <div class="gantt-item-block">
+        <div class="gantt-item-row">
+          <div class="gantt-item-label" title="${item.name}">
+            <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${item.category || '공종'}</span>
+            ${item.name}
           </div>
-          <div class="gantt-bar-weather" 
-               style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
-               title="${stName} 10개년 통계 비작업일: +${item.nonWorkDays}일&#10;(${workEndDay}일차 ~ ${finalEndDay}일차)">
-            +${item.nonWorkDays}일 (10년 통계)
+          <div class="gantt-timeline-track">
+            <div class="gantt-bar-work" 
+                 style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
+                 title="${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
+              ${item.name} (${item.netDays}일)
+            </div>
+            <div class="gantt-bar-weather" 
+                 style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
+                 title="${stName} 10개년 통계 비작업일: +${item.nonWorkDays}일&#10;(${workEndDay}일차 ~ ${finalEndDay}일차)">
+              +${item.nonWorkDays}일 (10년 통계)
+            </div>
+          </div>
+          <div style="width: 140px; text-align: right; color: #1e293b;" class="mono">
+            <span style="color:#2563eb; font-weight:700;">${item.netDays}일</span> + 
+            <span style="color:#d97706; font-weight:700;">${item.nonWorkDays}일</span> = 
+            <strong>${item.calendarDays}일</strong>
           </div>
         </div>
-        <div style="width: 140px; text-align: right; color: #1e293b;" class="mono">
-          <span style="color:#2563eb; font-weight:700;">${item.netDays}일</span> + 
-          <span style="color:#d97706; font-weight:700;">${item.nonWorkDays}일</span> = 
-          <strong>${item.calendarDays}일</strong>
+
+        <div class="gantt-actual-row">
+          <div class="gantt-actual-label">
+            <span class="actual-status-badge ${actual.statusClass}">${actual.statusLabel}</span>
+            <button class="btn-edit-actual" onclick="toggleActualEdit('${item.id}')">실적 입력</button>
+          </div>
+          <div class="gantt-actual-track">
+            ${actual.barHtml}
+          </div>
+          <div style="width: 140px; text-align: right; color: #64748b; font-size:11px;" class="mono">
+            ${actual.summaryText}
+          </div>
+        </div>
+
+        <div class="actual-edit-panel" id="actual-edit-${item.id}" style="display:none;">
+          <label>실제 착공일 <input type="date" id="actual-start-${item.id}" value="${item.actualStart || ''}"></label>
+          <label>실제 완료일 <input type="date" id="actual-end-${item.id}" value="${item.actualEnd || ''}"></label>
+          <button class="btn btn-primary btn-sm-mini" onclick="saveActualDates('${projectId}','${item.id}')">저장</button>
+          <button class="btn btn-sm-mini" style="border:1px solid #ccc;" onclick="clearActualDates('${projectId}','${item.id}')">초기화</button>
+          <span style="color:#94a3b8; font-size:11px;">※ 완료일을 비워두면 '진행중'으로 표시됩니다.</span>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// 계획 대비 실적 막대 및 상태 뱃지 계산
+function getActualBarInfo(item, projStart, plannedEndDate, totalCalendarDays, todayStr) {
+  if (!item.actualStart || !projStart) {
+    return {
+      statusClass: 'status-none',
+      statusLabel: '미착공',
+      barHtml: `<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10.5px; color:#cbd5e1;">실적 미입력</span>`,
+      summaryText: '-'
+    };
+  }
+
+  const aStartDay = daysBetween(projStart, item.actualStart) - 1; // 0-based offset
+  const hasEnd = !!item.actualEnd;
+  const endRefDate = hasEnd ? item.actualEnd : (todayStr > item.actualStart ? todayStr : item.actualStart);
+  let aEndDay = daysBetween(projStart, endRefDate); // exclusive end offset (inclusive day count)
+
+  const leftPct = Math.max(0, (aStartDay / totalCalendarDays) * 100).toFixed(2);
+  const widthPct = Math.max(1.5, ((aEndDay - aStartDay) / totalCalendarDays) * 100).toFixed(2);
+
+  let statusClass, statusLabel, barColor, summaryText;
+  if (hasEnd) {
+    const delayDays = daysBetween(plannedEndDate, item.actualEnd) - 1;
+    if (delayDays > 0) {
+      statusClass = 'status-delay';
+      statusLabel = `지연 완료 (+${delayDays}일)`;
+      barColor = '#dc2626';
+    } else {
+      statusClass = 'status-ontime';
+      statusLabel = delayDays < 0 ? `조기 완료 (${Math.abs(delayDays)}일)` : '정상 완료';
+      barColor = '#059669';
+    }
+    summaryText = `${item.actualStart} ~ ${item.actualEnd}`;
+  } else {
+    const overDays = daysBetween(plannedEndDate, todayStr) - 1;
+    if (overDays > 0) {
+      statusClass = 'status-delay';
+      statusLabel = `진행중 (지연 +${overDays}일)`;
+      barColor = '#dc2626';
+    } else {
+      statusClass = 'status-progress';
+      statusLabel = '진행중';
+      barColor = '#2563eb';
+    }
+    summaryText = `${item.actualStart} ~ 진행중`;
+  }
+
+  const barHtml = `
+    <div class="gantt-bar-actual" style="left:${leftPct}%; width:${widthPct}%; background:${barColor};"
+         title="실적: ${item.actualStart} ~ ${item.actualEnd || '진행중'}">
+      ${item.actualEnd ? '완료' : '진행중'}
+    </div>
+  `;
+
+  return { statusClass, statusLabel, barHtml, summaryText };
+}
+
+function toggleActualEdit(itemId) {
+  const panel = document.getElementById(`actual-edit-${itemId}`);
+  if (!panel) return;
+  panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'flex' : 'none';
+}
+
+function saveActualDates(projectId, itemId) {
+  const startVal = document.getElementById(`actual-start-${itemId}`).value;
+  const endVal = document.getElementById(`actual-end-${itemId}`).value;
+
+  if (!startVal) {
+    alert('실제 착공일을 입력해 주세요.');
+    return;
+  }
+  if (endVal && endVal < startVal) {
+    alert('완료일은 착공일보다 빠를 수 없습니다.');
+    return;
+  }
+
+  const db = loadDB();
+  const q = (db.quantities || []).find(x => x.id === itemId);
+  if (!q) return;
+  q.actualStart = startVal;
+  q.actualEnd = endVal || null;
+  saveDB(db);
+
+  renderGanttChart(projectId);
+}
+
+function clearActualDates(projectId, itemId) {
+  const db = loadDB();
+  const q = (db.quantities || []).find(x => x.id === itemId);
+  if (!q) return;
+  delete q.actualStart;
+  delete q.actualEnd;
+  saveDB(db);
+
+  renderGanttChart(projectId);
 }
 
 function openNewProjectModal() {
