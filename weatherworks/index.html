@@ -33,6 +33,7 @@
   /* 계획 vs 실적 비교 */
   .gantt-item-block { border-bottom: 1px solid #f1f5f9; padding: 10px 0; }
   .gantt-item-block .gantt-item-row { border-bottom: none; padding: 4px 0; }
+  .actual-combined-block { border-top: 2px solid #cbd5e1; border-bottom: none; margin-top: 4px; padding-top: 14px; background: #f8fafc; border-radius: 0 0 6px 6px; }
   .gantt-actual-row { display: flex; align-items: center; padding: 4px 0; font-size: 12px; }
   .gantt-actual-label { width: 260px; flex-shrink: 0; padding-right: 12px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; }
   .gantt-actual-track { flex: 1; position: relative; height: 20px; background: #fafafa; border-radius: 4px; border: 1px dashed #e2e8f0; overflow: hidden; }
@@ -397,8 +398,10 @@ function renderGanttChart(projectId) {
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
   const projStart = curProj ? curProj.startDate : null;
   const todayStr = fmtDate(new Date());
+  const combinedActualBars = [];
+  let itemsWithActual = 0;
 
-  body.innerHTML = scheduleChain.map((item, idx) => {
+  const plannedRowsHtml = scheduleChain.map((item, idx) => {
     const startDay = currentOffsetDay;
     const workEndDay = startDay + item.netDays;
     const finalEndDay = startDay + item.calendarDays;
@@ -413,8 +416,12 @@ function renderGanttChart(projectId) {
     const plannedStartDate = projStart ? addDays(projStart, startDay) : null;
     const plannedEndDate = projStart ? addDays(projStart, finalEndDay - 1) : null;
 
-    // 실적(착공일/완료일) 및 상태 계산
+    // 실적(착공일/완료일) 및 상태 계산 → 하단 통합 실적 행에 쌓아둔다
     const actual = getActualBarInfo(item, projStart, plannedEndDate, totalCalendarDays, todayStr);
+    if (actual.barHtml) {
+      combinedActualBars.push(actual.barHtml);
+      itemsWithActual++;
+    }
 
     return `
       <div class="gantt-item-block">
@@ -422,6 +429,8 @@ function renderGanttChart(projectId) {
           <div class="gantt-item-label" title="${item.name}">
             <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${item.category || '공종'}</span>
             ${item.name}
+            <span class="actual-status-badge ${actual.statusClass}" style="margin-left:6px;">${actual.statusLabel}</span>
+            <button class="btn-edit-actual" style="margin-left:4px;" onclick="toggleActualEdit('${item.id}')">실적 입력</button>
           </div>
           <div class="gantt-timeline-track">
             <div class="gantt-bar-work" 
@@ -442,19 +451,6 @@ function renderGanttChart(projectId) {
           </div>
         </div>
 
-        <div class="gantt-actual-row">
-          <div class="gantt-actual-label">
-            <span class="actual-status-badge ${actual.statusClass}">${actual.statusLabel}</span>
-            <button class="btn-edit-actual" onclick="toggleActualEdit('${item.id}')">실적 입력</button>
-          </div>
-          <div class="gantt-actual-track">
-            ${actual.barHtml}
-          </div>
-          <div style="width: 140px; text-align: right; color: #64748b; font-size:11px;" class="mono">
-            ${actual.summaryText}
-          </div>
-        </div>
-
         <div class="actual-edit-panel" id="actual-edit-${item.id}" style="display:none; flex-wrap:wrap;">
           <label>실제 착공일 <input type="date" id="actual-start-${item.id}" value="${item.actualStart || ''}"></label>
           <label>실제 완료일 <input type="date" id="actual-end-${item.id}" value="${item.actualEnd || ''}"></label>
@@ -462,11 +458,29 @@ function renderGanttChart(projectId) {
           <label style="flex:1; min-width:160px;">사유 <input type="text" id="actual-nonwork-reason-${item.id}" style="width:100%;" placeholder="예: 우천 2일, 혹한 1일" value="${item.actualNonWorkReason || ''}"></label>
           <button class="btn btn-primary btn-sm-mini" onclick="saveActualDates('${projectId}','${item.id}')">저장</button>
           <button class="btn btn-sm-mini" style="border:1px solid #ccc;" onclick="clearActualDates('${projectId}','${item.id}')">초기화</button>
-          <span style="color:#94a3b8; font-size:11px; width:100%;">※ 완료일을 비워두면 '진행중'으로 표시됩니다. 비작업일수는 실제 착공~완료(또는 오늘) 기간 중 발생한 일수를 입력하세요.</span>
+          <span style="color:#94a3b8; font-size:11px; width:100%;">${actual.summaryText ? '현재 실적: ' + actual.summaryText.replace(/<[^>]+>/g,'') : ''} · 완료일을 비워두면 '진행중'으로 표시됩니다.</span>
         </div>
       </div>
     `;
   }).join('');
+
+  const combinedRowHtml = `
+    <div class="gantt-item-block actual-combined-block">
+      <div class="gantt-actual-row">
+        <div class="gantt-actual-label">
+          <strong>실적 (전체 공종 통합)</strong>
+        </div>
+        <div class="gantt-actual-track" style="height:26px;">
+          ${combinedActualBars.length ? combinedActualBars.join('') : '<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#cbd5e1;">입력된 실적이 없습니다. 각 공종의 \'실적 입력\' 버튼을 눌러 등록하세요.</span>'}
+        </div>
+        <div style="width: 140px; text-align: right; color: #64748b; font-size:11px;" class="mono">
+          ${itemsWithActual}/${scheduleChain.length} 공종 입력됨
+        </div>
+      </div>
+    </div>
+  `;
+
+  body.innerHTML = plannedRowsHtml + combinedRowHtml;
 }
 
 // 계획 대비 실적 막대 및 상태 뱃지 계산
@@ -475,8 +489,8 @@ function getActualBarInfo(item, projStart, plannedEndDate, totalCalendarDays, to
     return {
       statusClass: 'status-none',
       statusLabel: '미착공',
-      barHtml: `<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:10.5px; color:#cbd5e1;">실적 미입력</span>`,
-      summaryText: '-'
+      barHtml: '',
+      summaryText: ''
     };
   }
 
@@ -528,12 +542,12 @@ function getActualBarInfo(item, projStart, plannedEndDate, totalCalendarDays, to
 
   const barHtml = `
     <div class="gantt-bar-actual" style="left:${leftPct}%; width:${workWidthPct}%; background:${barColor};"
-         title="실적 작업: ${item.actualStart} ~ ${item.actualEnd || '진행중(' + todayStr + ' 기준)'}&#10;작업일: ${actualWork}일">
-      ${hasEnd ? '완료' : '진행중'} ${actualWork}일
+         title="[${item.name}] 실적 작업: ${item.actualStart} ~ ${item.actualEnd || '진행중(' + todayStr + ' 기준)'}&#10;작업일: ${actualWork}일">
+      ${item.name} ${hasEnd ? '완료' : '진행중'} ${actualWork}일
     </div>
     ${actualNonWork > 0 ? `
     <div class="gantt-bar-actual-nonwork" style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
-         title="실제 발생 비작업일: +${actualNonWork}일${reasonAttr}">
+         title="[${item.name}] 실제 발생 비작업일: +${actualNonWork}일${reasonAttr}">
       +${actualNonWork}일
     </div>` : ''}
   `;
