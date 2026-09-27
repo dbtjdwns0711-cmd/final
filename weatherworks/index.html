@@ -50,6 +50,13 @@
   .actual-edit-panel input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #cbd5e1; border-radius:4px; }
   .actual-edit-panel .btn-sm-mini { font-size:11px; padding:3px 9px; border-radius:4px; cursor:pointer; }
 
+  /* 공종 목록 칩 */
+  .gantt-item-chip-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 0 4px; border-top: 1px dashed #e2e8f0; margin-top: 6px; }
+  .gantt-item-chip { display: flex; align-items: center; gap: 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+  .chip-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .chip-name { font-weight: 600; color: #1e293b; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-days { color: #64748b; font-size: 11px; }
+
   /* 모달 */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
   .modal-dialog { background: #fff; border-radius: 8px; width: 540px; max-width: 90vw; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
@@ -427,13 +434,29 @@ function renderGanttChart(projectId) {
   const planEndMarkerPct = isExtended ? ((totalCalendarDays / displayTotalDays) * 100).toFixed(2) : null;
 
   const combinedActualBars = [];
+  const combinedPlannedBars = [];
+  const chipsHtml = [];
+  const editPanelsHtml = [];
   let itemsWithActual = 0;
 
-  const plannedRowsHtml = planned.map(({ item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate }) => {
+  planned.forEach(({ item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate }) => {
     const leftPct = ((startDay / displayTotalDays) * 100).toFixed(2);
     const workWidthPct = ((item.netDays / displayTotalDays) * 100).toFixed(2);
     const nonWorkWidthPct = ((item.nonWorkDays / displayTotalDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
+
+    combinedPlannedBars.push(`
+      <div class="gantt-bar-work" 
+           style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
+           title="${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
+        ${item.name} (${item.netDays}일)
+      </div>
+      <div class="gantt-bar-weather" 
+           style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
+           title="${stName} 10개년 통계 비작업일: +${item.nonWorkDays}일&#10;(${workEndDay}일차 ~ ${finalEndDay}일차)">
+        +${item.nonWorkDays}일
+      </div>
+    `);
 
     const actual = actuals[idx];
     if (actual) {
@@ -444,47 +467,46 @@ function renderGanttChart(projectId) {
     const statusLabel = actual ? actual.statusLabel : '미착공';
     const summaryPlain = actual ? actual.summaryPlain : '';
 
-    return `
-      <div class="gantt-item-block">
-        <div class="gantt-item-row">
-          <div class="gantt-item-label" title="${item.name}">
-            <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; margin-right:4px;">${item.category || '공종'}</span>
-            ${item.name}
-            <span class="actual-status-badge ${statusClass}" style="margin-left:6px;">${statusLabel}</span>
-            <button class="btn-edit-actual" style="margin-left:4px;" onclick="toggleActualEdit('${item.id}')">실적 입력</button>
-          </div>
-          <div class="gantt-timeline-track">
-            ${isExtended ? `<div class="gantt-plan-end-marker" style="left:${planEndMarkerPct}%;"></div>` : ''}
-            <div class="gantt-bar-work" 
-                 style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
-                 title="${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
-              ${item.name} (${item.netDays}일)
-            </div>
-            <div class="gantt-bar-weather" 
-                 style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}%; width:${nonWorkWidthPct}%;"
-                 title="${stName} 10개년 통계 비작업일: +${item.nonWorkDays}일&#10;(${workEndDay}일차 ~ ${finalEndDay}일차)">
-              +${item.nonWorkDays}일 (10년 통계)
-            </div>
-          </div>
-          <div style="width: 140px; text-align: right; color: #1e293b;" class="mono">
-            <span style="color:#2563eb; font-weight:700;">${item.netDays}일</span> + 
-            <span style="color:#d97706; font-weight:700;">${item.nonWorkDays}일</span> = 
-            <strong>${item.calendarDays}일</strong>
-          </div>
-        </div>
+    chipsHtml.push(`
+      <div class="gantt-item-chip">
+        <span class="chip-dot" style="background:${color};"></span>
+        <span class="chip-name" title="${item.name}">${item.name}</span>
+        <span class="chip-days mono">${item.netDays}+${item.nonWorkDays}=${item.calendarDays}일</span>
+        <span class="actual-status-badge ${statusClass}">${statusLabel}</span>
+        <button class="btn-edit-actual" onclick="toggleActualEdit('${item.id}')">실적 입력</button>
+      </div>
+    `);
 
-        <div class="actual-edit-panel" id="actual-edit-${item.id}" style="display:none; flex-wrap:wrap;">
-          <label>실제 착공일 <input type="date" id="actual-start-${item.id}" value="${item.actualStart || ''}"></label>
-          <label>실제 완료일 <input type="date" id="actual-end-${item.id}" value="${item.actualEnd || ''}"></label>
-          <label>기간 중 비작업일수 <input type="number" min="0" step="0.5" id="actual-nonwork-${item.id}" style="width:60px;" value="${item.actualNonWorkDays || ''}"> 일</label>
-          <label style="flex:1; min-width:160px;">사유 <input type="text" id="actual-nonwork-reason-${item.id}" style="width:100%;" placeholder="예: 우천 2일, 혹한 1일" value="${item.actualNonWorkReason || ''}"></label>
-          <button class="btn btn-primary btn-sm-mini" onclick="saveActualDates('${projectId}','${item.id}')">저장</button>
-          <button class="btn btn-sm-mini" style="border:1px solid #ccc;" onclick="clearActualDates('${projectId}','${item.id}')">초기화</button>
-          <span style="color:#94a3b8; font-size:11px; width:100%;">${summaryPlain ? '현재 실적: ' + summaryPlain : ''} · 완료일을 비워두면 오늘 날짜까지의 진행 상황이 자동 반영됩니다.</span>
+    editPanelsHtml.push(`
+      <div class="actual-edit-panel" id="actual-edit-${item.id}" style="display:none; flex-wrap:wrap;">
+        <strong style="width:100%; color:#475569;">${item.name}</strong>
+        <label>실제 착공일 <input type="date" id="actual-start-${item.id}" value="${item.actualStart || ''}"></label>
+        <label>실제 완료일 <input type="date" id="actual-end-${item.id}" value="${item.actualEnd || ''}"></label>
+        <label>기간 중 비작업일수 <input type="number" min="0" step="0.5" id="actual-nonwork-${item.id}" style="width:60px;" value="${item.actualNonWorkDays || ''}"> 일</label>
+        <label style="flex:1; min-width:160px;">사유 <input type="text" id="actual-nonwork-reason-${item.id}" style="width:100%;" placeholder="예: 우천 2일, 혹한 1일" value="${item.actualNonWorkReason || ''}"></label>
+        <button class="btn btn-primary btn-sm-mini" onclick="saveActualDates('${projectId}','${item.id}')">저장</button>
+        <button class="btn btn-sm-mini" style="border:1px solid #ccc;" onclick="clearActualDates('${projectId}','${item.id}')">초기화</button>
+        <span style="color:#94a3b8; font-size:11px; width:100%;">${summaryPlain ? '현재 실적: ' + summaryPlain : ''} · 완료일을 비워두면 오늘 날짜까지의 진행 상황이 자동 반영됩니다.</span>
+      </div>
+    `);
+  });
+
+  const chipListHtml = `<div class="gantt-item-chip-list">${chipsHtml.join('')}</div>`;
+
+  const plannedRowHtml = `
+    <div class="gantt-item-block">
+      <div class="gantt-item-row">
+        <div class="gantt-item-label"><strong>계획 (전체 공종)</strong></div>
+        <div class="gantt-timeline-track" style="height:30px;">
+          ${isExtended ? `<div class="gantt-plan-end-marker" style="left:${planEndMarkerPct}%;"></div>` : ''}
+          ${combinedPlannedBars.join('')}
+        </div>
+        <div style="width: 140px; text-align: right; color: #1e293b;" class="mono">
+          계획 총 <strong>${totalCalendarDays}일</strong>
         </div>
       </div>
-    `;
-  }).join('');
+    </div>
+  `;
 
   const combinedRowHtml = `
     <div class="gantt-item-block actual-combined-block">
@@ -494,7 +516,7 @@ function renderGanttChart(projectId) {
         </div>
         <div class="gantt-actual-track" style="height:${trackHeight}px;">
           ${isExtended ? `<div class="gantt-plan-end-marker" style="left:${planEndMarkerPct}%;" title="계획상 최종 준공 시점"></div>` : ''}
-          ${combinedActualBars.length ? combinedActualBars.join('') : '<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#cbd5e1;">입력된 실적이 없습니다. 각 공종의 \'실적 입력\' 버튼을 눌러 등록하세요.</span>'}
+          ${combinedActualBars.length ? combinedActualBars.join('') : '<span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; color:#cbd5e1;">입력된 실적이 없습니다. 아래 공종 목록에서 \'실적 입력\'을 눌러 등록하세요.</span>'}
         </div>
         <div style="width: 140px; text-align: right; color: #64748b; font-size:11px; padding-top:2px;" class="mono">
           ${itemsWithActual}/${scheduleChain.length} 공종 입력됨
@@ -504,7 +526,7 @@ function renderGanttChart(projectId) {
     </div>
   `;
 
-  body.innerHTML = plannedRowsHtml + combinedRowHtml;
+  body.innerHTML = plannedRowHtml + combinedRowHtml + chipListHtml + editPanelsHtml.join('');
 }
 
 // 공종별 실적 원시 데이터 계산 (오늘 기준 진행중 구간까지 포함)
