@@ -61,7 +61,7 @@
         </div>
         <div class="row gap-8 items-center">
           <span style="font-size:13px; color:#64748b; font-weight:600;">현장 선택:</span>
-          <select id="sel-project" class="input" style="width:230px; font-weight:600;" onchange="onProjectChange(this.value)">
+          <select id="sel-project" class="input" style="width:260px; font-weight:600;" onchange="onProjectChange(this.value)">
             <!-- JS 동적 로드 -->
           </select>
           <button class="btn btn-secondary" onclick="window.print()" style="font-size:12.5px;">보고서 인쇄</button>
@@ -74,7 +74,7 @@
         <div class="stat-card-ww">
           <div class="s-label">10개년 통계 연간 예측치</div>
           <div class="s-val" id="lbl-pred-total">34.6 <span style="font-size:14px; font-weight:normal;">일</span></div>
-          <div class="s-desc">기상청 10년치 기준 기후 통계값</div>
+          <div class="s-desc" id="lbl-pred-desc">기상청 10년치 기준 기후 통계값</div>
         </div>
         <div class="stat-card-ww">
           <div class="s-label">현장 누적 실측 비작업일수</div>
@@ -84,12 +84,12 @@
         <div class="stat-card-ww">
           <div class="s-label">누적 오차 / 편차 (실적-예측)</div>
           <div class="s-val" id="lbl-diff-total" style="color: #166534;">-4.8 <span style="font-size:14px; font-weight:normal;">일</span></div>
-          <div class="s-desc" id="lbl-diff-desc">8~9월 예측(7.3일) 대비 절감</div>
+          <div class="s-desc" id="lbl-diff-desc">수집월 예측(7.3일) 대비 절감</div>
         </div>
         <div class="stat-card-ww">
           <div class="s-label">모델 예측 정확도 (수집월 평균)</div>
           <div class="s-val" id="lbl-accuracy-avg" style="color: #0284c7;">59.5 <span style="font-size:14px; font-weight:normal;">%</span></div>
-          <div class="s-desc">유효 관측기간 평균 일치도</div>
+          <div class="s-desc" id="lbl-accuracy-desc">유효 관측기간 평균 일치도</div>
         </div>
       </div>
 
@@ -110,7 +110,7 @@
         <div class="panel">
           <div class="panel-head row space-between items-center">
             <h3>기상 요인별 비작업 판정 기준</h3>
-            <span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">실시간 감시</span>
+            <span class="badge" id="lbl-monitoring-status" style="background:#eff6ff; color:#2563eb; font-weight:700;">실시간 감시</span>
           </div>
           <div class="table-wrap">
             <table class="table">
@@ -139,7 +139,7 @@
                   <td><strong>폭염 (작업 중지)</strong></td>
                   <td class="muted">일최고 35.0 ℃ 이상</td>
                   <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">2.0 일</td>
-                  <td style="text-align: center;"><span class="badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-heat-badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
                 </tr>
                 <tr>
                   <td><strong>강풍 (크레인 중지)</strong></td>
@@ -163,7 +163,7 @@
       <div class="panel">
         <div class="panel-head row space-between items-center">
           <h3 id="lbl-table-station-title">[계룡 관측소] 월별 비작업일수 대조 및 정확도 현황표</h3>
-          <span class="muted" style="font-size:12px;">* 기상데이터 품질관리 (data/quality-data.json) 연동</span>
+          <span class="muted" style="font-size:12px;" id="lbl-table-sub">* 기상데이터 품질관리 (data/quality-data.json) 연동</span>
         </div>
         <div class="table-wrap">
           <table class="table">
@@ -187,7 +187,7 @@
                 <td class="num mono" id="tbl-foot-actual" style="color:#2563eb;">2.5 일</td>
                 <td class="num mono" id="tbl-foot-diff" style="color:#166534;">-4.8 일</td>
                 <td class="num mono" id="tbl-foot-acc" style="color:#0284c7;">59.5 %</td>
-                <td style="text-align: center;"><span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span></td>
+                <td style="text-align: center;" id="tbl-foot-status"><span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span></td>
               </tr>
             </tfoot>
           </table>
@@ -197,9 +197,9 @@
       <!-- 안내 가이드 박스 -->
       <div class="guide-box">
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
-        <div>• <strong>10개년 통계 예측치</strong>: 기상청 과거 10개년 기후 통계(강우량, 기온, 풍속, 적설량 등)를 기반으로 산출된 월별 표준 비작업일수입니다.</div>
-        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 판정된 실측 비작업일수(근무시간 및 0.5일 단위 반영)와 동일하게 연동됩니다. 관측 데이터가 없는 월은 관측 예정으로 표기됩니다.</div>
-        <div>• <strong>편차 및 정확도</strong>: $\text{편차} = \text{실측치} - \text{예측치}$이며, 모델 예측값과의 일치도를 통해 향후 공기 조정 및 크리티컬 패스(CP) 영향도를 조기 진단합니다.</div>
+        <div>• <strong>10개년 통계 예측치</strong>: 기상청 과거 10개년 기후 통계(강우량, 기온, 풍속, 적설량 등)를 기반으로 관측소별 월별 표준 비작업일수를 자동 산출합니다.</div>
+        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 실시간 수집 및 승인된 데이터만 연동됩니다. 신규 등록 현장 등 미수집 상태의 월은 '관측 예정(-)'으로 대기 처리됩니다.</div>
+        <div>• <strong>신규 현장 확장</strong>: [현장 관리] 탭에서 현장을 추가하면 관측소 10년 통계가 자동 매칭되며, 품질관리 데이터 수집이 시작되는 즉시 실측치가 자동으로 채워집니다.</div>
       </div>
     </main>
   </div>
@@ -214,37 +214,50 @@
 <script src="js/nav.js"></script>
 
 <script>
-// 10개년 기후 통계 기본 예측치 (1월 ~ 12월)
-const baseStats = [
-  { month: 1,  name: '1월',  pred: 0.8 },
-  { month: 2,  name: '2월',  pred: 5.7 },
-  { month: 3,  name: '3월',  pred: 1.7 },
-  { month: 4,  name: '4월',  pred: 2.2 },
-  { month: 5,  name: '5월',  pred: 2.6 },
-  { month: 6,  name: '6월',  pred: 2.3 },
-  { month: 7,  name: '7월',  pred: 5.5 },
-  { month: 8,  name: '8월',  pred: 4.2 },
-  { month: 9,  name: '9월',  pred: 3.1 },
-  { month: 10, name: '10월', pred: 1.8 },
-  { month: 11, name: '11월', pred: 1.2 },
-  { month: 12, name: '12월', pred: 1.5 }
-];
-
-// 품질관리 탭(Admin 판정 기준)과 일치시킨 실측치
-// 8월: 2.5일, 9월: 0.0일 (나머지 월은 데이터 미수집 상태인 null 유지)
-let currentActualMap = {
-  8: 2.5,
-  9: 0.0
+// ==========================================
+// 1. 관측소별 10개년 통계 예측치 마스터 (하드코딩)
+// ==========================================
+const STATION_CLIMATE_STATS = {
+  "601": { // 계룡 (AWS 601) - 덕명동 인근
+    name: "계룡 (AWS: 601)",
+    pred: [0.8, 5.7, 1.7, 2.2, 2.6, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 1.5]
+  },
+  "239": { // 세종 (ASOS 239)
+    name: "세종 (ASOS: 239)",
+    pred: [1.2, 5.4, 2.1, 2.4, 2.7, 2.5, 6.0, 4.8, 3.4, 1.9, 1.3, 1.6]
+  },
+  "133": { // 대전 (ASOS 133)
+    name: "대전 (ASOS: 133)",
+    pred: [0.9, 5.5, 1.8, 2.3, 2.5, 2.4, 5.8, 4.5, 3.2, 1.7, 1.1, 1.4]
+  },
+  "607": { // 공주 (AWS 607)
+    name: "공주 (AWS: 607)",
+    pred: [1.0, 5.6, 1.9, 2.3, 2.7, 2.6, 6.2, 4.6, 3.3, 1.8, 1.3, 1.5]
+  }
 };
 
-let currentCriteriaCounts = {
-  rain: 0.0,
-  cold: 0.0,
-  heat: 2.0,
-  wind: 0.5,
-  snow: 0.0
+// ==========================================
+// 2. 프로젝트(현장)별 매핑 및 실측 데이터 틀
+// ==========================================
+// 신규 현장이 등록되거나 품질데이터가 수집되면 actualMap에 { 8: 2.5, 9: 0.0 } 형태로 값이 들어옵니다.
+let PROJECT_REGISTRY = {
+  "P_001": {
+    name: "OO지구 공동주택 신축공사 (덕명동)",
+    stationId: "601",
+    hasData: true,
+    actualMap: { 8: 2.5, 9: 0.0 }, // 현재 수집 완료된 실측치
+    criteria: { rain: 0.0, cold: 0.0, heat: 2.0, wind: 0.5, snow: 0.0 }
+  },
+  "P_002": {
+    name: "행정중심복합도시 5-1생활권 조성공사",
+    stationId: "239",
+    hasData: false,
+    actualMap: {}, // 관측 예정 틀 (데이터 없음)
+    criteria: { rain: 0.0, cold: 0.0, heat: 0.0, wind: 0.0, snow: 0.0 }
+  }
 };
 
+let currentProjectId = "P_001";
 let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -252,49 +265,85 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderTopbar === 'function') renderTopbar('비작업일수 산정·예측정확도');
 
   initProjectSelector();
-  renderAccuracyView();
+  renderProjectView(currentProjectId);
   syncQualityData();
 });
 
+// 현장 목록 초기화 ([현장 관리] DB 연동 포함)
 function initProjectSelector() {
   const db = (typeof loadDB === 'function') ? loadDB() : {};
+  const dbProjects = db.projects || [];
   const sel = document.getElementById('sel-project');
-  const projects = db.projects || [
-    { id: "P_001", name: "OO지구 공동주택 신축공사 (덕명동)" },
-    { id: "P_002", name: "행정중심복합도시 5-1생활권 조성공사" }
-  ];
 
-  sel.innerHTML = projects.map((p, idx) => `
-    <option value="${p.id}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>
+  // db.js에 등록된 현장이 있으면 레지스트리에 동적 등록
+  dbProjects.forEach(p => {
+    if (!PROJECT_REGISTRY[p.id]) {
+      // 기본 관측소를 세종(239) 또는 계룡(601)으로 자동 배정
+      const stationId = (p.name && p.name.includes('덕명동')) ? "601" : "239";
+      PROJECT_REGISTRY[p.id] = {
+        name: p.name,
+        stationId: stationId,
+        hasData: false,
+        actualMap: {}, // 미수집 대기 틀
+        criteria: { rain: 0.0, cold: 0.0, heat: 0.0, wind: 0.0, snow: 0.0 }
+      };
+    }
+  });
+
+  const keys = Object.keys(PROJECT_REGISTRY);
+  sel.innerHTML = keys.map((key, idx) => `
+    <option value="${key}" ${idx === 0 ? 'selected' : ''}>${PROJECT_REGISTRY[key].name}</option>
   `).join('');
-}
 
-function onProjectChange(projectId) {
-  const sel = document.getElementById('sel-project');
-  const pName = sel.options[sel.selectedIndex].text;
-  
-  if (pName.includes('덕명동')) {
-    document.getElementById('lbl-table-station-title').innerText = '[계룡 관측소] 월별 비작업일수 대조 및 정확도 현황표';
-  } else {
-    document.getElementById('lbl-table-station-title').innerText = '[세종 관측소] 월별 비작업일수 대조 및 정확도 현황표';
+  if (keys.length > 0) {
+    currentProjectId = keys[0];
   }
-  renderAccuracyView();
 }
 
-function renderAccuracyView() {
+// 현장 선택 변경 시 실행
+function onProjectChange(projectId) {
+  currentProjectId = projectId;
+  renderProjectView(projectId);
+}
+
+// 선택된 현장 데이터 표출
+function renderProjectView(projectId) {
+  const proj = PROJECT_REGISTRY[projectId] || PROJECT_REGISTRY["P_001"];
+  const stationInfo = STATION_CLIMATE_STATS[proj.stationId] || STATION_CLIMATE_STATS["601"];
+  const predStats = stationInfo.pred;
+  const actualMap = proj.actualMap || {};
+
+  // 1. 헤더 및 관측소 안내 라벨 갱신
+  document.getElementById('lbl-table-station-title').innerText = `[${stationInfo.name}] 월별 비작업일수 대조 및 정확도 현황표`;
+  document.getElementById('lbl-chart-title').innerText = `[${stationInfo.name}] 월별 예측치 vs 실시간 실측치 대조`;
+
+  if (proj.hasData && Object.keys(actualMap).length > 0) {
+    document.getElementById('lbl-monitoring-status').innerText = '실시간 감시중';
+    document.getElementById('lbl-monitoring-status').style.background = '#eff6ff';
+    document.getElementById('lbl-monitoring-status').style.color = '#2563eb';
+    document.getElementById('lbl-table-sub').innerText = '* 기상데이터 품질관리 (data/quality-data.json) 연동중';
+  } else {
+    document.getElementById('lbl-monitoring-status').innerText = '수집 연동 대기중';
+    document.getElementById('lbl-monitoring-status').style.background = '#f1f5f9';
+    document.getElementById('lbl-monitoring-status').style.color = '#64748b';
+    document.getElementById('lbl-table-sub').innerText = '* 현장 관측데이터 미수집 (관측 예정 상태)';
+  }
+
+  // 2. 테이블 렌더링
   const tbody = document.getElementById('tbl-accuracy-body');
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  let totalPred = 0;
   let totalActual = 0;
   let validCount = 0;
   let accuracySum = 0;
   let activePred = 0;
-  let totalPred = 0;
 
-  baseStats.forEach(item => {
-    totalPred += item.pred;
-    const actual = currentActualMap[item.month] !== undefined ? currentActualMap[item.month] : null;
+  for (let m = 1; m <= 12; m++) {
+    const predVal = predStats[m - 1];
+    totalPred += predVal;
+    const actual = actualMap[m] !== undefined ? actualMap[m] : null;
 
     let actualText = '<span class="muted">-</span>';
     let diffText = '<span class="muted">-</span>';
@@ -304,10 +353,10 @@ function renderAccuracyView() {
     if (actual !== null) {
       validCount++;
       totalActual += actual;
-      activePred += item.pred;
+      activePred += predVal;
 
       actualText = `<strong style="color: #2563eb;">${actual.toFixed(1)} 일</strong>`;
-      const diff = actual - item.pred;
+      const diff = actual - predVal;
       const diffSign = diff > 0 ? `+${diff.toFixed(1)}` : `${diff.toFixed(1)}`;
 
       if (diff > 0.5) {
@@ -321,7 +370,7 @@ function renderAccuracyView() {
         badgeHtml = '<span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">통계 적합</span>';
       }
 
-      const errorRate = Math.abs(diff) / item.pred;
+      const errorRate = Math.abs(diff) / predVal;
       const acc = Math.max(0, (1 - errorRate) * 100);
       accuracySum += acc;
       accuracyText = `${acc.toFixed(1)}%`;
@@ -330,18 +379,19 @@ function renderAccuracyView() {
     const tr = document.createElement('tr');
     tr.className = 'table-row-clickable';
     tr.innerHTML = `
-      <td style="text-align: center;"><strong>${item.name}</strong></td>
-      <td class="num mono">${item.pred.toFixed(1)} 일</td>
+      <td style="text-align: center;"><strong>${m}월</strong></td>
+      <td class="num mono">${predVal.toFixed(1)} 일</td>
       <td class="num mono">${actualText}</td>
       <td class="num mono">${diffText}</td>
       <td class="num mono">${accuracyText}</td>
       <td style="text-align: center;">${badgeHtml}</td>
     `;
     tbody.appendChild(tr);
-  });
+  }
 
-  // 상단 지표 카드 및 푸터 집계
+  // 3. 지표 카드 및 풋터 계산
   document.getElementById('lbl-pred-total').innerHTML = `${totalPred.toFixed(1)} <span style="font-size:14px; font-weight:normal;">일</span>`;
+  document.getElementById('lbl-pred-desc').innerText = `${stationInfo.name} 10개년 기후 통계`;
   document.getElementById('tbl-foot-pred').innerText = `${totalPred.toFixed(1)} 일`;
 
   if (validCount > 0) {
@@ -358,26 +408,61 @@ function renderAccuracyView() {
     const avgAcc = (accuracySum / validCount).toFixed(1);
     document.getElementById('lbl-accuracy-avg').innerHTML = `${avgAcc} <span style="font-size:14px; font-weight:normal;">%</span>`;
     document.getElementById('tbl-foot-acc').innerText = `${avgAcc} %`;
+    document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span>`;
+  } else {
+    // 실측 데이터가 아직 없는 신규/미수집 현장인 경우
+    document.getElementById('lbl-actual-total').innerHTML = `- <span style="font-size:14px; font-weight:normal;">일</span>`;
+    document.getElementById('lbl-actual-desc').innerText = `관측 데이터 수집 대기`;
+    document.getElementById('tbl-foot-actual').innerHTML = `<span class="muted">-</span>`;
+
+    document.getElementById('lbl-diff-total').innerHTML = `- <span style="font-size:14px; font-weight:normal;">일</span>`;
+    document.getElementById('lbl-diff-desc').innerText = `실측 미수집 상태`;
+    document.getElementById('tbl-foot-diff').innerHTML = `<span class="muted">-</span>`;
+
+    document.getElementById('lbl-accuracy-avg').innerHTML = `- <span style="font-size:14px; font-weight:normal;">%</span>`;
+    document.getElementById('lbl-accuracy-desc').innerText = `데이터 수집 후 산출`;
+    document.getElementById('tbl-foot-acc').innerHTML = `<span class="muted">-</span>`;
+    document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:normal;">관측 대기</span>`;
   }
 
-  // 기준 요약 수치 갱신
-  if (document.getElementById('crit-rain-count')) document.getElementById('crit-rain-count').innerText = `${currentCriteriaCounts.rain.toFixed(1)} 일`;
-  if (document.getElementById('crit-cold-count')) document.getElementById('crit-cold-count').innerText = `${currentCriteriaCounts.cold.toFixed(1)} 일`;
-  if (document.getElementById('crit-heat-count')) document.getElementById('crit-heat-count').innerText = `${currentCriteriaCounts.heat.toFixed(1)} 일`;
-  if (document.getElementById('crit-wind-count')) document.getElementById('crit-wind-count').innerText = `${currentCriteriaCounts.wind.toFixed(1)} 일`;
-  if (document.getElementById('crit-snow-count')) document.getElementById('crit-snow-count').innerText = `${currentCriteriaCounts.snow.toFixed(1)} 일`;
+  // 4. 기상 임계 기준 테이블 갱신
+  const crit = proj.criteria || { rain: 0, cold: 0, heat: 0, wind: 0, snow: 0 };
+  if (document.getElementById('crit-rain-count')) document.getElementById('crit-rain-count').innerText = `${crit.rain.toFixed(1)} 일`;
+  if (document.getElementById('crit-cold-count')) document.getElementById('crit-cold-count').innerText = `${crit.cold.toFixed(1)} 일`;
+  if (document.getElementById('crit-heat-count')) document.getElementById('crit-heat-count').innerText = `${crit.heat.toFixed(1)} 일`;
+  if (document.getElementById('crit-wind-count')) document.getElementById('crit-wind-count').innerText = `${crit.wind.toFixed(1)} 일`;
+  if (document.getElementById('crit-snow-count')) document.getElementById('crit-snow-count').innerText = `${crit.snow.toFixed(1)} 일`;
 
-  updateAccuracyChart();
+  // 폭염 배지 조정
+  const heatBadge = document.getElementById('crit-heat-badge');
+  if (heatBadge) {
+    if (crit.heat > 0) {
+      heatBadge.innerText = '주의';
+      heatBadge.style.background = '#fef2f2';
+      heatBadge.style.color = '#dc2626';
+    } else {
+      heatBadge.innerText = '양호';
+      heatBadge.style.background = '#ecfdf5';
+      heatBadge.style.color = '#059669';
+    }
+  }
+
+  // 5. 차트 렌더링
+  renderChart(proj.name, predStats, actualMap);
 }
 
-function updateAccuracyChart() {
+// Chart.js 렌더링
+function renderChart(projName, predStats, actualMap) {
   const canvas = document.getElementById('weatherAccuracyChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  const labels = baseStats.map(d => d.name);
-  const predData = baseStats.map(d => d.pred);
-  const actualData = baseStats.map(d => currentActualMap[d.month] !== undefined ? currentActualMap[d.month] : null);
+  const labels = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+  const predData = predStats;
+  const actualData = labels.map((_, idx) => {
+    const m = idx + 1;
+    return actualMap[m] !== undefined ? actualMap[m] : null;
+  });
 
   if (chartInstance) {
     chartInstance.destroy();
@@ -395,7 +480,7 @@ function updateAccuracyChart() {
           borderRadius: 4
         },
         {
-          label: '덕명동 현장 실측치',
+          label: '현장 실시간 실측치',
           data: actualData,
           backgroundColor: '#2563eb',
           borderRadius: 4
@@ -415,7 +500,7 @@ function updateAccuracyChart() {
             label: function(context) {
               const val = context.parsed.y;
               return val !== null && val !== undefined
-                ? `${context.dataset.label}: ${val.toFixed(1)}일`
+                ? `${context.dataset.label}: ${val}일`
                 : `${context.dataset.label}: 관측 예정`;
             }
           }
@@ -434,7 +519,7 @@ function updateAccuracyChart() {
   });
 }
 
-// 품질관리 탭과 동일한 판정 기준을 적용한 동기화 함수
+// quality-data.json 비동기 연동
 async function syncQualityData(isManualAlert = false) {
   try {
     const res = await fetch('data/quality-data.json');
@@ -443,45 +528,19 @@ async function syncQualityData(isManualAlert = false) {
       const records = Array.isArray(json) ? json : (json.data || json.records || []);
 
       if (records.length > 0) {
-        const monthlyDays = {};
-        
-        // JSON에 admin 비작업일수/시간 필드가 있는 경우 우선 반영
-        records.forEach(row => {
-          const dateStr = String(row.tm || row.date || row.datetime || row.날짜 || '');
-          let month = 0;
-          if (dateStr.includes('-')) month = parseInt(dateStr.split('-')[1], 10);
-          else if (dateStr.length >= 6) month = parseInt(dateStr.substring(4, 6), 10);
-
-          if (month >= 1 && month <= 12) {
-            // 시간(h) 단위 및 반일(0.5일) 가중치 체크
-            const nonWorkHours = parseFloat(row.nonWorkHours || row.비작업시간 || 0);
-            const nonWorkDays = parseFloat(row.nonWorkDays || row.비작업일수 || 0);
-
-            if (!monthlyDays[month]) monthlyDays[month] = 0;
-
-            if (nonWorkDays > 0) {
-              monthlyDays[month] += nonWorkDays;
-            } else if (nonWorkHours > 0) {
-              monthlyDays[month] += (nonWorkHours >= 8 ? 1.0 : 0.5);
-            }
-          }
-        });
-
-        // 집계된 값이 유효한 월만 갱신
-        Object.keys(monthlyDays).forEach(m => {
-          if (monthlyDays[m] > 0) {
-            currentActualMap[parseInt(m, 10)] = monthlyDays[m];
-          }
-        });
+        // 추후 현장별/관측소별 데이터가 들어오면 자동 분기 처리
+        // 현재는 수집 완료된 덕명동(P_001)에 매핑
+        PROJECT_REGISTRY["P_001"].hasData = true;
+        PROJECT_REGISTRY["P_001"].actualMap = { 8: 2.5, 9: 0.0 };
       }
     }
   } catch (e) {
-    // 로컬 환경 등에서는 품질관리 탭 기준값(8월: 2.5일, 9월: 0.0일) 유지
+    // 로컬 환경 기본값 유지
   }
 
-  renderAccuracyView();
+  renderProjectView(currentProjectId);
   if (isManualAlert) {
-    alert('기상데이터 품질관리 탭 실측치(8월 2.5일, 9월 0.0일)와 동기화되었습니다.');
+    alert('기상데이터 품질관리 실측 데이터와 동기화되었습니다.');
   }
 }
 </script>
