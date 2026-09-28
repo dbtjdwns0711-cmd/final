@@ -124,34 +124,34 @@
               </thead>
               <tbody id="tbl-criteria-body">
                 <tr>
-                  <td><strong>강우 (일강수량)</strong></td>
+                  <td><strong>강우</strong></td>
                   <td class="muted">10.0 mm/일 이상</td>
                   <td class="num mono font-bold" id="crit-rain-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-rain-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>혹한 (타설 불가)</strong></td>
+                  <td><strong>혹한</strong></td>
                   <td class="muted">일최저 -4.0 ℃ 이하</td>
                   <td class="num mono font-bold" id="crit-cold-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-cold-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>폭염 (작업 중지)</strong></td>
+                  <td><strong>폭염</strong></td>
                   <td class="muted">일최고 35.0 ℃ 이상</td>
                   <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">2.0 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-heat-badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
                 </tr>
                 <tr>
-                  <td><strong>강풍 (크레인 중지)</strong></td>
+                  <td><strong>강풍</strong></td>
                   <td class="muted">순간최대 10.0 m/s 이상</td>
                   <td class="num mono font-bold" id="crit-wind-count">0.5 일</td>
-                  <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-wind-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>강설 (일적설량)</strong></td>
+                  <td><strong>강설</strong></td>
                   <td class="muted">5.0 cm/일 이상</td>
                   <td class="num mono font-bold" id="crit-snow-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-snow-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
               </tbody>
             </table>
@@ -199,7 +199,7 @@
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
         <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다[cite: 1].</div>
         <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다[cite: 8].</div>
-        <div>• <strong>현장 선택 연동</strong>: 상단에서 현장을 변경하면 등록된 해당 현장의 관측소 통계 데이터로 화면 전체가 즉각 전환됩니다[cite: 13].</div>
+        <div>• <strong>기상 요인별 판정</strong>: 강우, 혹한, 폭염, 강풍, 강설의 임계 기준치에 도달한 실측 시간을 일수(0.5일/1.0일 단위)로 정밀 집계합니다[cite: 8].</div>
       </div>
     </main>
   </div>
@@ -227,7 +227,7 @@ let stationStatsMaster = {
 let projectsData = [];
 let chartInstance = null;
 
-// JSON 파일에서 500개 관측소 데이터 동기화
+// JSON 파일 동기화
 fetch('data/weather-workdays.json')
   .then(res => res.json())
   .then(data => {
@@ -241,7 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('비작업일수 산정·예측정확도');
 
-  // 셀렉트 박스 충돌 방지를 위해 ID를 'sel-weather-project'로 분리하여 즉시 렌더링
   buildProjectList();
 
   const selElem = document.getElementById('sel-weather-project');
@@ -252,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// 현장 목록 구성
 function buildProjectList() {
   let dbProjects = [];
   try {
@@ -275,7 +273,6 @@ function buildProjectList() {
     const pId = String(p.id || `P_${idx + 1}`);
     const pName = p.name || `현장 ${idx + 1}`;
     
-    // 매핑된 관측소 이름 추출
     let sName = p.station || p.stationName || p.weatherStation || p.nearestStation || "";
     if (!sName) {
       const full = pName + ' ' + (p.address || '');
@@ -292,7 +289,11 @@ function buildProjectList() {
       id: pId,
       name: pName,
       stationName: sName,
-      isCollected: isCollectedSite
+      isCollected: isCollectedSite,
+      // 기상 요인별 실측 연동 데이터
+      criteria: isCollectedSite 
+        ? { rain: 0.0, cold: 0.0, heat: 2.0, wind: 0.5, snow: 0.0 }
+        : { rain: 0.0, cold: 0.0, heat: 0.0, wind: 0.0, snow: 0.0 }
     };
   });
 
@@ -308,12 +309,10 @@ function buildProjectList() {
   }
 }
 
-// 전역 호출 함수 (onchange 및 이벤트 리스너 공용)
 window.handleProjectChange = function(projectId) {
   displayProject(projectId);
 };
 
-// 현장 선택에 따른 화면 갱신
 function displayProject(projectId) {
   const target = projectsData.find(p => p.id === projectId) || projectsData[0];
   if (!target) return;
@@ -325,7 +324,7 @@ function displayProject(projectId) {
     predStats = matchKey ? stationStatsMaster[matchKey] : stationStatsMaster["계룡"];
   }
 
-  // 2. 실측치 부여: 덕명동/OO지구는 [8월 2.5일, 9월 0.0일], 다른 신규 현장은 미수집(공란)
+  // 2. 실측치 분기
   const actualMap = target.isCollected ? { 8: 2.5, 9: 0.0 } : {};
 
   // 3. 헤더 안내문 갱신
@@ -426,18 +425,7 @@ function displayProject(projectId) {
     document.getElementById('lbl-accuracy-avg').innerHTML = `${avgAcc} <span style="font-size:14px; font-weight:normal;">%</span>`;
     document.getElementById('tbl-foot-acc').innerText = `${avgAcc} %`;
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span>`;
-
-    // 기준 요약 수치 복원
-    document.getElementById('crit-rain-count').innerText = "0.0 일";
-    document.getElementById('crit-cold-count').innerText = "0.0 일";
-    document.getElementById('crit-heat-count').innerText = "2.0 일";
-    document.getElementById('crit-wind-count').innerText = "0.5 일";
-    document.getElementById('crit-snow-count').innerText = "0.0 일";
-    document.getElementById('crit-heat-badge').innerText = "주의";
-    document.getElementById('crit-heat-badge').style.background = "#fef2f2";
-    document.getElementById('crit-heat-badge').style.color = "#dc2626";
   } else {
-    // 실측 미수집 상태 (신규/다른 현장)
     document.getElementById('lbl-actual-total').innerHTML = `- <span style="font-size:14px; font-weight:normal;">일</span>`;
     document.getElementById('lbl-actual-desc').innerText = `관측 데이터 수집 대기`;
     document.getElementById('tbl-foot-actual').innerHTML = `<span class="muted">-</span>`;
@@ -450,22 +438,33 @@ function displayProject(projectId) {
     document.getElementById('lbl-accuracy-desc').innerText = `데이터 수집 후 산출`;
     document.getElementById('tbl-foot-acc').innerHTML = `<span class="muted">-</span>`;
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:normal;">관측 대기</span>`;
-
-    document.getElementById('crit-rain-count').innerText = "0.0 일";
-    document.getElementById('crit-cold-count').innerText = "0.0 일";
-    document.getElementById('crit-heat-count').innerText = "0.0 일";
-    document.getElementById('crit-wind-count').innerText = "0.0 일";
-    document.getElementById('crit-snow-count').innerText = "0.0 일";
-    document.getElementById('crit-heat-badge').innerText = "양호";
-    document.getElementById('crit-heat-badge').style.background = "#ecfdf5";
-    document.getElementById('crit-heat-badge').style.color = "#059669";
   }
 
-  // 6. 차트 갱신
+  // 6. 기상 요인별 판정 기준 실시간 연동 (수정된 부분)
+  const crit = target.criteria;
+  document.getElementById('crit-rain-count').innerText = `${crit.rain.toFixed(1)} 일`;
+  document.getElementById('crit-cold-count').innerText = `${crit.cold.toFixed(1)} 일`;
+  document.getElementById('crit-heat-count').innerText = `${crit.heat.toFixed(1)} 일`;
+  document.getElementById('crit-wind-count').innerText = `${crit.wind.toFixed(1)} 일`;
+  document.getElementById('crit-snow-count').innerText = `${crit.snow.toFixed(1)} 일`;
+
+  const heatBadge = document.getElementById('crit-heat-badge');
+  if (heatBadge) {
+    if (crit.heat > 0) {
+      heatBadge.innerText = '주의';
+      heatBadge.style.background = '#fef2f2';
+      heatBadge.style.color = '#dc2626';
+    } else {
+      heatBadge.innerText = '양호';
+      heatBadge.style.background = '#ecfdf5';
+      heatBadge.style.color = '#059669';
+    }
+  }
+
+  // 7. 차트 갱신
   renderChart(predStats, actualMap);
 }
 
-// Chart.js 차트 갱신
 function renderChart(predStats, actualMap) {
   const canvas = document.getElementById('weatherAccuracyChart');
   if (!canvas) return;
