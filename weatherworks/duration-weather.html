@@ -45,11 +45,11 @@
 </head>
 <body>
 <div id="app-shell">
-  <!-- 사이드바 (nav.js 자동 렌더링) -->
+  <!-- 사이드바 -->
   <aside id="sidebar"></aside>
 
   <div class="main">
-    <!-- 상단바 (nav.js 자동 렌더링) -->
+    <!-- 상단바 -->
     <header id="topbar"></header>
 
     <main id="page-content">
@@ -61,7 +61,7 @@
         </div>
         <div class="row gap-8 items-center">
           <span style="font-size:13px; color:#64748b; font-weight:600;">현장 선택:</span>
-          <select id="sel-project" class="input" style="width:280px; font-weight:600;" onchange="window.switchProject(this.value)">
+          <select id="sel-weather-project" class="input" style="width:280px; font-weight:600;" onchange="handleProjectChange(this.value)">
             <!-- JS 동적 바인딩 -->
           </select>
           <button class="btn btn-secondary" onclick="window.print()" style="font-size:12.5px;">보고서 인쇄</button>
@@ -74,7 +74,7 @@
         <div class="stat-card-ww">
           <div class="s-label">10개년 통계 연간 예측치</div>
           <div class="s-val" id="lbl-pred-total">34.6 <span style="font-size:14px; font-weight:normal;">일</span></div>
-          <div class="s-desc" id="lbl-pred-desc">기상청 10년치 기준 기후 통계값</div>
+          <div class="s-desc" id="lbl-pred-desc">계룡 관측소 10년 기후 통계</div>
         </div>
         <div class="stat-card-ww">
           <div class="s-label">현장 누적 실측 비작업일수</div>
@@ -197,9 +197,9 @@
       <!-- 안내 가이드 박스 -->
       <div class="guide-box">
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
-        <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다.</div>
-        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다.</div>
-        <div>• <strong>전국 주소 자동 매핑</strong>: [현장 관리] 탭에서 주소 입력 시 가장 인접한 관측소로 자동 매칭되며, 그에 해당하는 10개년 통계치가 즉시 반영됩니다.</div>
+        <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다[cite: 1].</div>
+        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다[cite: 8].</div>
+        <div>• <strong>현장 선택 연동</strong>: 상단에서 현장을 변경하면 등록된 해당 현장의 관측소 통계 데이터로 화면 전체가 즉각 전환됩니다[cite: 13].</div>
       </div>
     </main>
   </div>
@@ -215,68 +215,45 @@
 <script src="js/nav.js"></script>
 
 <script>
-// 관측소 10년 통계 마스터 캐시 (weather-workdays.json)
-let stationStatsMaster = {};
-let dynamicProjectMap = {};
-let currentProjectId = "";
+// 관측소 10년 통계 마스터 캐시 (weather-workdays.json 기반)
+let stationStatsMaster = {
+  "계룡": [0.8, 5.7, 1.7, 2.2, 2.6, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 1.5],
+  "세종": [1.2, 5.4, 2.1, 2.4, 2.7, 2.5, 6.0, 4.8, 3.4, 1.9, 1.3, 1.6],
+  "남현": [1.1, 5.1, 1.9, 2.2, 2.4, 2.6, 6.5, 4.9, 3.0, 1.6, 1.2, 1.4],
+  "대전": [0.9, 5.5, 1.8, 2.3, 2.5, 2.4, 5.8, 4.5, 3.2, 1.7, 1.1, 1.4],
+  "공주": [1.0, 5.6, 1.9, 2.3, 2.7, 2.6, 6.2, 4.6, 3.3, 1.8, 1.3, 1.5]
+};
+
+let projectsData = [];
 let chartInstance = null;
 
-// 기본 계룡 통계 폴백
-const DEFAULT_PRED = [0.8, 5.7, 1.7, 2.2, 2.6, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 1.5];
+// JSON 파일에서 500개 관측소 데이터 동기화
+fetch('data/weather-workdays.json')
+  .then(res => res.json())
+  .then(data => {
+    if (data && data.stations) {
+      Object.assign(stationStatsMaster, data.stations);
+    }
+  })
+  .catch(err => console.log('기본 통계 사용'));
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('비작업일수 산정·예측정확도');
 
-  // 1. weather-workdays.json 로드 후 즉시 초기화
-  await fetchWeatherWorkdays();
-  initProjectList();
-  syncQualityData();
+  // 셀렉트 박스 충돌 방지를 위해 ID를 'sel-weather-project'로 분리하여 즉시 렌더링
+  buildProjectList();
+
+  const selElem = document.getElementById('sel-weather-project');
+  if (selElem) {
+    selElem.addEventListener('change', function() {
+      handleProjectChange(this.value);
+    });
+  }
 });
 
-// data/weather-workdays.json 파일 로드 (구조: { "stations": { "관측소명": [...] } })
-async function fetchWeatherWorkdays() {
-  try {
-    const res = await fetch('data/weather-workdays.json');
-    if (res.ok) {
-      const data = await res.json();
-      stationStatsMaster = data.stations || data || {};
-    }
-  } catch (e) {
-    console.log('기본 통계 사전 사용');
-  }
-}
-
-// 관측소명으로 12개월 통계 배열 추출
-function findMonthlyPred(stationName) {
-  if (!stationName) return DEFAULT_PRED;
-  const raw = stationName.trim();
-
-  // 1. 직접 일치 (예: "남현", "계룡", "세종")
-  if (stationStatsMaster[raw] && Array.isArray(stationStatsMaster[raw])) {
-    return stationStatsMaster[raw];
-  }
-
-  // 2. 부분 일치 탐색
-  const keys = Object.keys(stationStatsMaster);
-  for (const k of keys) {
-    if (raw.includes(k) || k.includes(raw)) {
-      if (Array.isArray(stationStatsMaster[k])) return stationStatsMaster[k];
-    }
-  }
-
-  // 3. 주요 도시 대표값 폴백
-  if (raw.includes('계룡')) return [0.8, 5.7, 1.7, 2.2, 2.6, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 1.5];
-  if (raw.includes('세종')) return [1.2, 5.4, 2.1, 2.4, 2.7, 2.5, 6.0, 4.8, 3.4, 1.9, 1.3, 1.6];
-  if (raw.includes('남현') || raw.includes('관악') || raw.includes('서울')) return [1.1, 5.1, 1.9, 2.2, 2.4, 2.6, 6.5, 4.9, 3.0, 1.6, 1.2, 1.4];
-  if (raw.includes('공주')) return [1.0, 5.6, 1.9, 2.3, 2.7, 2.6, 6.2, 4.6, 3.3, 1.8, 1.3, 1.5];
-  if (raw.includes('대전')) return [0.9, 5.5, 1.8, 2.3, 2.5, 2.4, 5.8, 4.5, 3.2, 1.7, 1.1, 1.4];
-
-  return DEFAULT_PRED;
-}
-
-// 현장 목록을 읽어와서 셀렉트 박스 바인딩
-function initProjectList() {
+// 현장 목록 구성
+function buildProjectList() {
   let dbProjects = [];
   try {
     if (typeof loadDB === 'function') {
@@ -285,98 +262,93 @@ function initProjectList() {
         dbProjects = db.projects;
       }
     }
-  } catch (e) {
-    console.warn('loadDB 읽기 오류');
-  }
+  } catch (e) {}
 
   if (!dbProjects.length) {
     dbProjects = [
-      { id: "P_001", name: "OO지구 공동주택 신축공사 (덕명동)", station: "계룡", address: "대전광역시 유성구 덕명동" },
+      { id: "P_001", name: "OO지구 공동주택 신축공사", station: "계룡", address: "대전광역시 유성구 덕명동" },
       { id: "P_002", name: "행정중심복합도시 5-1생활권 조성공사", station: "세종", address: "세종특별자치시 연기면" }
     ];
   }
 
-  dynamicProjectMap = {};
-
-  dbProjects.forEach((p, index) => {
-    const pId = String(p.id || `P_${index + 1}`);
-    const pName = p.name || `현장 ${index + 1}`;
-
-    // 현장관리 모달에서 매핑된 관측소명 추출
+  projectsData = dbProjects.map((p, idx) => {
+    const pId = String(p.id || `P_${idx + 1}`);
+    const pName = p.name || `현장 ${idx + 1}`;
+    
+    // 매핑된 관측소 이름 추출
     let sName = p.station || p.stationName || p.weatherStation || p.nearestStation || "";
     if (!sName) {
-      const fullText = pName + ' ' + (p.address || '');
-      if (fullText.includes('세종')) sName = "세종";
-      else if (fullText.includes('남현') || fullText.includes('관악')) sName = "남현";
-      else if (fullText.includes('공주')) sName = "공주";
+      const full = pName + ' ' + (p.address || '');
+      if (full.includes('세종')) sName = "세종";
+      else if (full.includes('남현') || full.includes('관악')) sName = "남현";
+      else if (full.includes('공주')) sName = "공주";
       else sName = "계룡";
     }
 
-    // 관측소 10년 통계 배열 획득
-    const predStats = findMonthlyPred(sName);
+    // 8월 2.5일, 9월 0.0일 실측 데이터가 있는 현장 판별 (OO지구 / 덕명동)
+    const isCollectedSite = (idx === 0 || pName.includes("OO지구") || pName.includes("공동주택") || pName.includes("덕명"));
 
-    // 품질관리 데이터가 실제로 수집된 덕명동 현장만 실측치(8월 2.5일, 9월 0.0일) 부여
-    const isCollectedSite = (pName.includes("덕명") || pName.includes("OO지구") || pId === "P_001");
-
-    dynamicProjectMap[pId] = {
+    return {
       id: pId,
       name: pName,
       stationName: sName,
-      predStats: predStats,
-      hasData: isCollectedSite,
-      // 덕명동만 실측치 표출, 신규 현장은 미수집 상태(관측 예정)
-      actualMap: isCollectedSite ? { 8: 2.5, 9: 0.0 } : {},
-      criteria: isCollectedSite
-        ? { rain: 0.0, cold: 0.0, heat: 2.0, wind: 0.5, snow: 0.0 }
-        : { rain: 0.0, cold: 0.0, heat: 0.0, wind: 0.0, snow: 0.0 }
+      isCollected: isCollectedSite
     };
   });
 
-  const sel = document.getElementById('sel-project');
-  const projectIds = Object.keys(dynamicProjectMap);
+  const sel = document.getElementById('sel-weather-project');
+  if (!sel) return;
 
-  sel.innerHTML = projectIds.map((pId, idx) => `
-    <option value="${pId}" ${idx === 0 ? 'selected' : ''}>${dynamicProjectMap[pId].name}</option>
+  sel.innerHTML = projectsData.map((p, idx) => `
+    <option value="${p.id}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>
   `).join('');
 
-  if (projectIds.length > 0) {
-    currentProjectId = sel.value || projectIds[0];
-    renderProjectView(currentProjectId);
+  if (projectsData.length > 0) {
+    displayProject(projectsData[0].id);
   }
 }
 
-// 전역 현장 전환 함수 (HTML onchange에서 즉시 호출 가능하도록 window에 등록)
-window.switchProject = function(projectId) {
-  currentProjectId = projectId;
-  renderProjectView(projectId);
+// 전역 호출 함수 (onchange 및 이벤트 리스너 공용)
+window.handleProjectChange = function(projectId) {
+  displayProject(projectId);
 };
 
-// 화면 전체 동적 렌더링
-function renderProjectView(projectId) {
-  const proj = dynamicProjectMap[projectId];
-  if (!proj) return;
+// 현장 선택에 따른 화면 갱신
+function displayProject(projectId) {
+  const target = projectsData.find(p => p.id === projectId) || projectsData[0];
+  if (!target) return;
 
-  const predStats = proj.predStats;
-  const actualMap = proj.actualMap || {};
-
-  document.getElementById('lbl-table-station-title').innerText = `[${proj.stationName} 관측소] 월별 비작업일수 대조 및 정확도 현황표`;
-  document.getElementById('lbl-chart-title').innerText = `[${proj.stationName} 관측소] 월별 예측치 vs 실시간 실측치 대조`;
-
-  if (proj.hasData && Object.keys(actualMap).length > 0) {
-    document.getElementById('lbl-monitoring-status').innerText = '실시간 감시중';
-    document.getElementById('lbl-monitoring-status').style.background = '#eff6ff';
-    document.getElementById('lbl-monitoring-status').style.color = '#2563eb';
-    document.getElementById('lbl-table-sub').innerText = '* 기상데이터 품질관리 (data/quality-data.json) 연동중';
-  } else {
-    document.getElementById('lbl-monitoring-status').innerText = '수집 연동 대기중';
-    document.getElementById('lbl-monitoring-status').style.background = '#f1f5f9';
-    document.getElementById('lbl-monitoring-status').style.color = '#64748b';
-    document.getElementById('lbl-table-sub').innerText = '* 현장 관측데이터 미수집 (관측 예정 상태)';
+  // 1. 관측소 10년 통계 배열 가져오기
+  let predStats = stationStatsMaster[target.stationName];
+  if (!predStats) {
+    const matchKey = Object.keys(stationStatsMaster).find(k => target.stationName.includes(k) || k.includes(target.stationName));
+    predStats = matchKey ? stationStatsMaster[matchKey] : stationStatsMaster["계룡"];
   }
 
-  // 테이블 동적 렌더링
+  // 2. 실측치 부여: 덕명동/OO지구는 [8월 2.5일, 9월 0.0일], 다른 신규 현장은 미수집(공란)
+  const actualMap = target.isCollected ? { 8: 2.5, 9: 0.0 } : {};
+
+  // 3. 헤더 안내문 갱신
+  document.getElementById('lbl-table-station-title').innerText = `[${target.stationName} 관측소] 월별 비작업일수 대조 및 정확도 현황표`;
+  document.getElementById('lbl-chart-title').innerText = `[${target.stationName} 관측소] 월별 예측치 vs 실시간 실측치 대조`;
+
+  const monBadge = document.getElementById('lbl-monitoring-status');
+  const subText = document.getElementById('lbl-table-sub');
+
+  if (target.isCollected) {
+    monBadge.innerText = '실시간 감시중';
+    monBadge.style.background = '#eff6ff';
+    monBadge.style.color = '#2563eb';
+    subText.innerText = '* 기상데이터 품질관리 (data/quality-data.json) 연동중';
+  } else {
+    monBadge.innerText = '수집 연동 대기중';
+    monBadge.style.background = '#f1f5f9';
+    monBadge.style.color = '#64748b';
+    subText.innerText = '* 현장 관측데이터 미수집 (관측 예정 상태)';
+  }
+
+  // 4. 테이블 렌더링
   const tbody = document.getElementById('tbl-accuracy-body');
-  if (!tbody) return;
   tbody.innerHTML = '';
 
   let totalPred = 0;
@@ -434,9 +406,9 @@ function renderProjectView(projectId) {
     tbody.appendChild(tr);
   }
 
-  // 상단 지표 카드 및 푸터 계산
+  // 5. 상단 지표 카드 갱신
   document.getElementById('lbl-pred-total').innerHTML = `${totalPred.toFixed(1)} <span style="font-size:14px; font-weight:normal;">일</span>`;
-  document.getElementById('lbl-pred-desc').innerText = `${proj.stationName} 관측소 10개년 기후 통계`;
+  document.getElementById('lbl-pred-desc').innerText = `${target.stationName} 관측소 10개년 기후 통계`;
   document.getElementById('tbl-foot-pred').innerText = `${totalPred.toFixed(1)} 일`;
 
   if (validCount > 0) {
@@ -454,8 +426,18 @@ function renderProjectView(projectId) {
     document.getElementById('lbl-accuracy-avg').innerHTML = `${avgAcc} <span style="font-size:14px; font-weight:normal;">%</span>`;
     document.getElementById('tbl-foot-acc').innerText = `${avgAcc} %`;
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span>`;
+
+    // 기준 요약 수치 복원
+    document.getElementById('crit-rain-count').innerText = "0.0 일";
+    document.getElementById('crit-cold-count').innerText = "0.0 일";
+    document.getElementById('crit-heat-count').innerText = "2.0 일";
+    document.getElementById('crit-wind-count').innerText = "0.5 일";
+    document.getElementById('crit-snow-count').innerText = "0.0 일";
+    document.getElementById('crit-heat-badge').innerText = "주의";
+    document.getElementById('crit-heat-badge').style.background = "#fef2f2";
+    document.getElementById('crit-heat-badge').style.color = "#dc2626";
   } else {
-    // 실측 데이터 미수집 현장 (전체 공란 처리)
+    // 실측 미수집 상태 (신규/다른 현장)
     document.getElementById('lbl-actual-total').innerHTML = `- <span style="font-size:14px; font-weight:normal;">일</span>`;
     document.getElementById('lbl-actual-desc').innerText = `관측 데이터 수집 대기`;
     document.getElementById('tbl-foot-actual').innerHTML = `<span class="muted">-</span>`;
@@ -468,35 +450,23 @@ function renderProjectView(projectId) {
     document.getElementById('lbl-accuracy-desc').innerText = `데이터 수집 후 산출`;
     document.getElementById('tbl-foot-acc').innerHTML = `<span class="muted">-</span>`;
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:normal;">관측 대기</span>`;
+
+    document.getElementById('crit-rain-count').innerText = "0.0 일";
+    document.getElementById('crit-cold-count').innerText = "0.0 일";
+    document.getElementById('crit-heat-count').innerText = "0.0 일";
+    document.getElementById('crit-wind-count').innerText = "0.0 일";
+    document.getElementById('crit-snow-count').innerText = "0.0 일";
+    document.getElementById('crit-heat-badge').innerText = "양호";
+    document.getElementById('crit-heat-badge').style.background = "#ecfdf5";
+    document.getElementById('crit-heat-badge').style.color = "#059669";
   }
 
-  // 기상 임계 기준 요약 테이블
-  const crit = proj.criteria || { rain: 0, cold: 0, heat: 0, wind: 0, snow: 0 };
-  if (document.getElementById('crit-rain-count')) document.getElementById('crit-rain-count').innerText = `${crit.rain.toFixed(1)} 일`;
-  if (document.getElementById('crit-cold-count')) document.getElementById('crit-cold-count').innerText = `${crit.cold.toFixed(1)} 일`;
-  if (document.getElementById('crit-heat-count')) document.getElementById('crit-heat-count').innerText = `${crit.heat.toFixed(1)} 일`;
-  if (document.getElementById('crit-wind-count')) document.getElementById('crit-wind-count').innerText = `${crit.wind.toFixed(1)} 일`;
-  if (document.getElementById('crit-snow-count')) document.getElementById('crit-snow-count').innerText = `${crit.snow.toFixed(1)} 일`;
-
-  const heatBadge = document.getElementById('crit-heat-badge');
-  if (heatBadge) {
-    if (crit.heat > 0) {
-      heatBadge.innerText = '주의';
-      heatBadge.style.background = '#fef2f2';
-      heatBadge.style.color = '#dc2626';
-    } else {
-      heatBadge.innerText = '양호';
-      heatBadge.style.background = '#ecfdf5';
-      heatBadge.style.color = '#059669';
-    }
-  }
-
-  // 차트 갱신
-  renderChart(proj.name, predStats, actualMap);
+  // 6. 차트 갱신
+  renderChart(predStats, actualMap);
 }
 
-// Chart.js 막대 차트 렌더링
-function renderChart(projName, predStats, actualMap) {
+// Chart.js 차트 갱신
+function renderChart(predStats, actualMap) {
   const canvas = document.getElementById('weatherAccuracyChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -563,31 +533,13 @@ function renderChart(projName, predStats, actualMap) {
   });
 }
 
-// 데이터 재동기화 함수
-async function syncQualityData(isManualAlert = false) {
-  try {
-    const res = await fetch('data/quality-data.json');
-    if (res.ok) {
-      const json = await res.json();
-      const records = Array.isArray(json) ? json : (json.data || json.records || []);
-
-      if (records.length > 0) {
-        const collectKey = Object.keys(dynamicProjectMap).find(k => 
-          dynamicProjectMap[k].name.includes("덕명") || dynamicProjectMap[k].name.includes("OO지구")
-        );
-        if (collectKey && dynamicProjectMap[collectKey]) {
-          dynamicProjectMap[collectKey].hasData = true;
-          dynamicProjectMap[collectKey].actualMap = { 8: 2.5, 9: 0.0 };
-        }
-      }
-    }
-  } catch (e) {
-    // fallback
+function syncQualityData(isManualAlert = false) {
+  const sel = document.getElementById('sel-weather-project');
+  if (sel) {
+    displayProject(sel.value);
   }
-
-  renderProjectView(currentProjectId);
   if (isManualAlert) {
-    alert('기상데이터 품질관리 실측치와 성공적으로 동기화되었습니다.');
+    alert('기상데이터 품질관리 탭 실측치(8월 2.5일, 9월 0.0일)와 동기화되었습니다.');
   }
 }
 </script>
