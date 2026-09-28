@@ -3,75 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>비작업일수 산정·예측정확도 - WeatherWorks</title>
+  <title>비작업일수 산정·예측정확도 | WeatherWorks</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="layout">
+  <div id="app">
     <!-- 사이드바 -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <h1>WeatherWorks</h1>
-        <span class="sub">건설공사 비작업일수·공사기간 산정</span>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-section">현장</div>
-        <a href="index.html" class="nav-item">현장 관리</a>
-        <div class="nav-section">공사 물량·생산성 산정</div>
-        <a href="quantity.html" class="nav-item">구간별 관측지점</a>
-        <div class="nav-section">공사기간 산정</div>
-        <a href="duration-workdays.html" class="nav-item">작업일수 산정</a>
-        <a href="duration-weather.html" class="nav-item active">비작업일수 산정·예측정확도</a>
-        <div class="nav-section">데이터 관리</div>
-        <a href="quality.html" class="nav-item">기상데이터 품질관리</a>
-        <a href="data.html" class="nav-item">공정표 Import</a>
-        <div class="nav-section">데이터 관리</div>
-        <a href="schedule.html" class="nav-item">기상 판정 기준·공휴일</a>
-      </nav>
-    </aside>
+    <aside id="sidebar"></aside>
 
     <!-- 메인 컨텐츠 -->
     <main class="main-content">
-      <header class="top-header">
-        <h2 class="page-title">비작업일수 산정·예측정확도</h2>
-        <div class="header-actions">
+      <header class="page-header">
+        <div class="header-left">
+          <h1 class="page-title">비작업일수 산정·예측정확도</h1>
+          <p class="page-sub">10개년 기후통계 기반 비작업일수와 현장 실측치 대조·정확도 분석</p>
+        </div>
+        <div class="header-right">
           <span class="badge badge-success">시스템 상태: 정상 가동중</span>
         </div>
       </header>
 
       <div class="content-body">
-        <!-- 상단 필터 바 -->
-        <div class="filter-card">
-          <div class="filter-group">
-            <label class="filter-label">프로젝트 선택</label>
-            <select class="form-control" id="projectSelect">
-              <option value="p1">행정중심복합도시 5-1생활권 조성공사</option>
-              <option value="p2">공주-세종 광역 BRT 구축사업</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">관측지점(ASOS/AWS)</label>
-            <select class="form-control" id="stationSelect">
-              <option value="601">계룡 (AWS: 601) - 주 관측소</option>
-              <option value="133">대전 (ASOS: 133) - 보조</option>
-              <option value="239">세종 (ASOS: 239) - 보조</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">분석 대상 연도</label>
-            <select class="form-control" id="yearSelect">
-              <option value="2026">2026년 (당해년도 실측)</option>
-              <option value="2025">2025년</option>
-            </select>
-          </div>
-          <div class="filter-actions">
-            <button class="btn btn-secondary" onclick="window.print()">보고서 인쇄</button>
-            <button class="btn btn-primary" onclick="loadQualityDataAndRender()">데이터 재동기화</button>
+        <!-- 상단 필터 -->
+        <div class="filter-bar card">
+          <div class="filter-row">
+            <div class="form-group">
+              <label for="projectSelect">프로젝트</label>
+              <select id="projectSelect" class="form-control">
+                <option value="p1">행정중심복합도시 5-1생활권 조성공사</option>
+                <option value="p2">공주-세종 광역 BRT 구축사업</option>
+                <option value="p3">금강 보행교 건설공사</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="stationSelect">관측지점(ASOS/AWS)</label>
+              <select id="stationSelect" class="form-control">
+                <option value="601">계룡 (AWS: 601) - 주 관측소</option>
+                <option value="133">대전 (ASOS: 133) - 보조</option>
+                <option value="239">세종 (ASOS: 239) - 보조</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="yearSelect">분석 대상 연도</label>
+              <select id="yearSelect" class="form-control">
+                <option value="2026">2026년 (당해년도 실측)</option>
+                <option value="2025">2025년</option>
+                <option value="2024">2024년</option>
+              </select>
+            </div>
+            <div class="form-group filter-btn-group">
+              <button class="btn btn-secondary" onclick="window.print()">보고서 인쇄</button>
+              <button class="btn btn-primary" onclick="loadQualityAndSync()">데이터 재동기화</button>
+            </div>
           </div>
         </div>
 
-        <!-- 핵심 요약 지표 카드 -->
+        <!-- 상단 요약 카드 그리드 -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-label">10개년 통계 연간 예측치</div>
@@ -95,7 +83,7 @@
           </div>
         </div>
 
-        <!-- 차트 및 기준 요약 섹션 -->
+        <!-- 차트 & 판정 기준 -->
         <div class="grid-2col">
           <div class="card">
             <div class="card-header">
@@ -123,7 +111,7 @@
                       <th>상태</th>
                     </tr>
                   </thead>
-                  <tbody id="criteriaTableBody">
+                  <tbody>
                     <tr>
                       <td>강우 (일강수량)</td>
                       <td>10.0 mm/일 이상</td>
@@ -159,7 +147,7 @@
         <div class="card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 class="card-title">[계룡 관측소] 월별 비작업일수 대조 및 정확도 현황표</h3>
-            <span style="font-size: 12px; color: #6c757d;">* 기상데이터 품질관리(data/quality-data.json) 연동</span>
+            <span style="font-size: 12px; color: var(--text-muted, #868e96);">* 기상데이터 품질관리(data/quality-data.json) 연동</span>
           </div>
           <div class="card-body">
             <div class="table-responsive">
@@ -186,8 +174,13 @@
     </main>
   </div>
 
+  <!-- 공통 스크립트 연결 -->
+  <script src="js/util.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/calc.js"></script>
+
   <script>
-    // 10개년 통계 기본 예측치 (1월 ~ 12월)
     const baseStats = [
       { month: 1,  name: '1월',  pred: 0.8 },
       { month: 2,  name: '2월',  pred: 5.7 },
@@ -203,19 +196,17 @@
       { month: 12, name: '12월', pred: 1.5 }
     ];
 
-    // 기상데이터 판정 임계 기준
     const CRITERIA = {
-      rain: 10.0,   // 일강수량 >= 10.0mm
-      cold: -4.0,   // 일최저기온 <= -4.0℃
-      heat: 35.0,   // 일최고기온 >= 35.0℃
-      wind: 10.0    // 최대순간풍속 >= 10.0m/s
+      rain: 10.0,
+      cold: -4.0,
+      heat: 35.0,
+      wind: 10.0
     };
 
     let chartInstance = null;
 
-    // 기상데이터 품질관리(data/quality-data.json) 파싱 및 비작업일수 산출 함수
+    // quality-data.json 데이터 분석
     function processQualityRecords(records) {
-      // 월별 비작업일자 Set (중복 일자 방지)
       const monthlyNonWorkDays = {};
       const monthlyTotalDaysInRecord = {};
       const criteriaCounts = { rain: 0, cold: 0, heat: 0, wind: 0 };
@@ -227,17 +218,15 @@
 
       if (Array.isArray(records)) {
         records.forEach(row => {
-          // 날짜 추출 (date 또는 tm 또는 일자 형식)
           const dateStr = row.date || row.tm || row.datetime || row.날짜 || '';
           if (!dateStr) return;
 
           const d = new Date(dateStr);
           if (isNaN(d.getTime())) return;
-          const month = d.getMonth() + 1; // 1~12
+          const month = d.getMonth() + 1;
 
           monthlyTotalDaysInRecord[month].add(dateStr.substring(0, 10));
 
-          // 기상 측정값 추출
           const rain = parseFloat(row.rain !== undefined ? row.rain : (row.rnDay || row.강수량 || 0)) || 0;
           const minTemp = parseFloat(row.minTemp !== undefined ? row.minTemp : (row.taMin || row.최저기온 || 99)) || 99;
           const maxTemp = parseFloat(row.maxTemp !== undefined ? row.maxTemp : (row.taMax || row.최고기온 || -99)) || -99;
@@ -267,16 +256,13 @@
         });
       }
 
-      // 월별 병합 데이터 구성: 데이터가 실제로 존재하는 월만 actual 숫자를 부여하고 나머지는 null(공란)
-      return baseStats.map(item => {
+      // 데이터가 존재하는 월(8, 9월 등)만 actual 부여, 나머지는 null(공란)
+      const monthlyResult = baseStats.map(item => {
         const recordedCount = monthlyTotalDaysInRecord[item.month].size;
         let actual = null;
-
-        // 해당 월에 수집된 데이터가 존재하는 경우에만 실측치로 채택
         if (recordedCount > 0) {
           actual = monthlyNonWorkDays[item.month].size;
         }
-
         return {
           month: item.month,
           name: item.name,
@@ -284,11 +270,13 @@
           actual: actual
         };
       });
+
+      return { monthlyResult, criteriaCounts };
     }
 
-    // UI 렌더링 함수
     function renderView(monthlyResult, criteriaCounts) {
       const tbody = document.getElementById('accuracyTableBody');
+      if (!tbody) return;
       tbody.innerHTML = '';
 
       let totalPred = 0;
@@ -306,7 +294,6 @@
         let accuracyText = '-';
         let badgeHtml = '<span class="badge badge-secondary">관측 예정</span>';
 
-        // 8~9월처럼 실제 데이터가 들어있는 월만 처리, 나머지는 공란
         if (item.actual !== null && item.actual !== undefined) {
           validMonthsCount++;
           totalActual += item.actual;
@@ -343,12 +330,11 @@
         tbody.appendChild(tr);
       });
 
-      // 상단 요약 카드 수치 갱신
+      // 카드 지표 갱신
       if (validMonthsCount > 0) {
         document.getElementById('summaryActualTotal').innerHTML = `${totalActual} <span class="unit">일</span>`;
         document.getElementById('summaryActualDesc').innerText = `수집 ${validMonthsCount}개 월 누적 실측`;
 
-        // 관측된 월들만의 예측치 합산
         const activePred = monthlyResult
           .filter(d => d.actual !== null)
           .reduce((sum, d) => sum + d.pred, 0);
@@ -361,13 +347,8 @@
         const avgAcc = (accuracySum / validMonthsCount).toFixed(1);
         document.getElementById('summaryAccuracy').innerHTML = `${avgAcc} <span class="unit">%</span>`;
         document.getElementById('summaryAccuracyDesc').innerText = `${validMonthsCount}개 수집월 평균 일치도`;
-      } else {
-        document.getElementById('summaryActualTotal').innerHTML = `- <span class="unit">일</span>`;
-        document.getElementById('summaryDiffTotal').innerHTML = `- <span class="unit">일</span>`;
-        document.getElementById('summaryAccuracy').innerHTML = `- <span class="unit">%</span>`;
       }
 
-      // 우측 기상 요인별 반영일수 갱신
       if (criteriaCounts) {
         if (document.getElementById('critRainCount')) document.getElementById('critRainCount').innerText = `${criteriaCounts.rain || 0} 일`;
         if (document.getElementById('critColdCount')) document.getElementById('critColdCount').innerText = `${criteriaCounts.cold || 0} 일`;
@@ -375,11 +356,9 @@
         if (document.getElementById('critWindCount')) document.getElementById('critWindCount').innerText = `${criteriaCounts.wind || 0} 일`;
       }
 
-      // 차트 갱신
       updateChart(monthlyResult);
     }
 
-    // Chart.js 렌더링 함수
     function updateChart(monthlyResult) {
       const canvas = document.getElementById('accuracyChart');
       if (!canvas) return;
@@ -387,7 +366,7 @@
 
       const labels = monthlyResult.map(d => d.name);
       const predData = monthlyResult.map(d => d.pred);
-      const actualData = monthlyResult.map(d => d.actual); // null인 달은 차트에 그려지지 않음
+      const actualData = monthlyResult.map(d => d.actual);
 
       if (chartInstance) {
         chartInstance.destroy();
@@ -401,16 +380,16 @@
             {
               label: '10개년 통계 예측치',
               data: predData,
-              backgroundColor: '#ced4da',
-              borderColor: '#adb5bd',
+              backgroundColor: '#cbd5e1',
+              borderColor: '#94a3b8',
               borderWidth: 1,
               borderRadius: 3
             },
             {
               label: '의당동 현장 실측치',
               data: actualData,
-              backgroundColor: '#1971c2',
-              borderColor: '#1864ab',
+              backgroundColor: '#2563eb',
+              borderColor: '#1d4ed8',
               borderWidth: 1,
               borderRadius: 3
             }
@@ -448,26 +427,20 @@
       });
     }
 
-    // quality-data.json 로드 및 데이터 바인딩
-    async function loadQualityDataAndRender() {
+    async function loadQualityAndSync() {
       try {
-        // data/quality-data.json 파일 읽기 시도
         const res = await fetch('data/quality-data.json');
-        if (!res.ok) throw new Error('파일 fetch 실패');
+        if (!res.ok) throw new Error('파일 읽기 실패');
         const json = await res.json();
-        
-        // json 내부 배열 형태 대응 (직접 배열이거나 json.data 형태)
         const records = Array.isArray(json) ? json : (json.data || json.records || []);
-        const processed = processQualityRecords(records);
-        renderView(processed);
+        const { monthlyResult, criteriaCounts } = processQualityRecords(records);
+        renderView(monthlyResult, criteriaCounts);
       } catch (err) {
-        console.warn('quality-data.json 비동기 fetch 불가 (로컬 file:// 실행 등). 현재 수집된 8~9월 데이터를 직접 적용합니다.', err);
-        
-        // 현재 quality-data.json에 저장되어 있는 8~9월 실측 데이터 하드코딩 폴백 (데이터 추가 전 기본값)
+        // 로컬 실행 등 fetch 실패 시 현재 8~9월 실측 데이터 기본값 반영
         const fallbackResult = baseStats.map(item => {
           let actual = null;
-          if (item.month === 8) actual = 4; // 8월 수집 실측치
-          if (item.month === 9) actual = 3; // 9월 수집 실측치
+          if (item.month === 8) actual = 4; // 8월 실측
+          if (item.month === 9) actual = 3; // 9월 실측
           return {
             month: item.month,
             name: item.name,
@@ -480,7 +453,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      loadQualityDataAndRender();
+      loadQualityAndSync();
     });
   </script>
 </body>
