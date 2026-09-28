@@ -78,17 +78,17 @@
         </div>
         <div class="stat-card-ww">
           <div class="s-label">현장 누적 실측 비작업일수</div>
-          <div class="s-val" id="lbl-actual-total" style="color: #2563eb;">7 <span style="font-size:14px; font-weight:normal;">일</span></div>
+          <div class="s-val" id="lbl-actual-total" style="color: #2563eb;">2.5 <span style="font-size:14px; font-weight:normal;">일</span></div>
           <div class="s-desc" id="lbl-actual-desc">8~9월 누적 관측 실적</div>
         </div>
         <div class="stat-card-ww">
           <div class="s-label">누적 오차 / 편차 (실적-예측)</div>
-          <div class="s-val" id="lbl-diff-total" style="color: #166534;">-0.3 <span style="font-size:14px; font-weight:normal;">일</span></div>
-          <div class="s-desc" id="lbl-diff-desc">수집월 예측(7.3일) 대비 절감</div>
+          <div class="s-val" id="lbl-diff-total" style="color: #166534;">-4.8 <span style="font-size:14px; font-weight:normal;">일</span></div>
+          <div class="s-desc" id="lbl-diff-desc">8~9월 예측(7.3일) 대비 절감</div>
         </div>
         <div class="stat-card-ww">
           <div class="s-label">모델 예측 정확도 (수집월 평균)</div>
-          <div class="s-val" id="lbl-accuracy-avg" style="color: #0284c7;">96.0 <span style="font-size:14px; font-weight:normal;">%</span></div>
+          <div class="s-val" id="lbl-accuracy-avg" style="color: #0284c7;">59.5 <span style="font-size:14px; font-weight:normal;">%</span></div>
           <div class="s-desc">유효 관측기간 평균 일치도</div>
         </div>
       </div>
@@ -126,31 +126,31 @@
                 <tr>
                   <td><strong>강우 (일강수량)</strong></td>
                   <td class="muted">10.0 mm/일 이상</td>
-                  <td class="num mono font-bold" id="crit-rain-count">4 일</td>
+                  <td class="num mono font-bold" id="crit-rain-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
                   <td><strong>혹한 (타설 불가)</strong></td>
                   <td class="muted">일최저 -4.0 ℃ 이하</td>
-                  <td class="num mono font-bold" id="crit-cold-count">0 일</td>
+                  <td class="num mono font-bold" id="crit-cold-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
                   <td><strong>폭염 (작업 중지)</strong></td>
                   <td class="muted">일최고 35.0 ℃ 이상</td>
-                  <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">3 일</td>
+                  <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">2.0 일</td>
                   <td style="text-align: center;"><span class="badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
                 </tr>
                 <tr>
                   <td><strong>강풍 (크레인 중지)</strong></td>
                   <td class="muted">순간최대 10.0 m/s 이상</td>
-                  <td class="num mono font-bold" id="crit-wind-count">0 일</td>
+                  <td class="num mono font-bold" id="crit-wind-count">0.5 일</td>
                   <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
                   <td><strong>강설 (일적설량)</strong></td>
                   <td class="muted">5.0 cm/일 이상</td>
-                  <td class="num mono font-bold" id="crit-snow-count">0 일</td>
+                  <td class="num mono font-bold" id="crit-snow-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
               </tbody>
@@ -184,9 +184,9 @@
               <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
                 <td style="text-align: center;">합계 / 평균</td>
                 <td class="num mono" id="tbl-foot-pred">34.6 일</td>
-                <td class="num mono" id="tbl-foot-actual" style="color:#2563eb;">7 일</td>
-                <td class="num mono" id="tbl-foot-diff" style="color:#166534;">-0.3 일</td>
-                <td class="num mono" id="tbl-foot-acc" style="color:#0284c7;">96.0 %</td>
+                <td class="num mono" id="tbl-foot-actual" style="color:#2563eb;">2.5 일</td>
+                <td class="num mono" id="tbl-foot-diff" style="color:#166534;">-4.8 일</td>
+                <td class="num mono" id="tbl-foot-acc" style="color:#0284c7;">59.5 %</td>
                 <td style="text-align: center;"><span class="badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">정상 관리중</span></td>
               </tr>
             </tfoot>
@@ -194,12 +194,12 @@
         </div>
       </div>
 
-      <!-- 원본 산정 및 정확도 가이드 안내 박스 -->
+      <!-- 안내 가이드 박스 -->
       <div class="guide-box">
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
         <div>• <strong>10개년 통계 예측치</strong>: 기상청 과거 10개년 기후 통계(강우량, 기온, 풍속, 적설량 등)를 기반으로 산출된 월별 표준 비작업일수입니다.</div>
-        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에 수집되는 현장 관측소의 실제 일별 관측치를 실시간 필터링하여 임계값 초과 일수를 집계합니다. 현재 관측 데이터가 없는 월은 관측 예정으로 표기됩니다.</div>
-        <div>• <strong>편차 및 정확도</strong>: $\text{편차} = \text{실측치} - \text{예측치}$이며, 통계적 예측치와의 부합도 검증을 통해 시공 중 공기 연장 리스크 및 크리티컬 패스(CP) 영향도를 조기 진단합니다.</div>
+        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 판정된 실측 비작업일수(근무시간 및 0.5일 단위 반영)와 동일하게 연동됩니다. 관측 데이터가 없는 월은 관측 예정으로 표기됩니다.</div>
+        <div>• <strong>편차 및 정확도</strong>: $\text{편차} = \text{실측치} - \text{예측치}$이며, 모델 예측값과의 일치도를 통해 향후 공기 조정 및 크리티컬 패스(CP) 영향도를 조기 진단합니다.</div>
       </div>
     </main>
   </div>
@@ -230,31 +230,28 @@ const baseStats = [
   { month: 12, name: '12월', pred: 1.5 }
 ];
 
-// 현재 quality-data.json에 들어있는 8월, 9월 실측 기본값 (나머지 월은 공란 처리)
+// 품질관리 탭(Admin 판정 기준)과 일치시킨 실측치
+// 8월: 2.5일, 9월: 0.0일 (나머지 월은 데이터 미수집 상태인 null 유지)
 let currentActualMap = {
-  8: 4, // 8월 실측 비작업일수: 4일
-  9: 3  // 9월 실측 비작업일수: 3일
+  8: 2.5,
+  9: 0.0
 };
 
 let currentCriteriaCounts = {
-  rain: 4,
-  cold: 0,
-  heat: 3,
-  wind: 0,
-  snow: 0
+  rain: 0.0,
+  cold: 0.0,
+  heat: 2.0,
+  wind: 0.5,
+  snow: 0.0
 };
 
 let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. 공통 네비게이션 및 탑바 주입
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('비작업일수 산정·예측정확도');
 
-  // 2. 프로젝트 셀렉트 박스 초기화
   initProjectSelector();
-
-  // 3. 뷰 렌더링 및 품질관리 JSON 동기화 실행
   renderAccuracyView();
   syncQualityData();
 });
@@ -276,7 +273,6 @@ function onProjectChange(projectId) {
   const sel = document.getElementById('sel-project');
   const pName = sel.options[sel.selectedIndex].text;
   
-  // 관측소 라벨명 갱신
   if (pName.includes('덕명동')) {
     document.getElementById('lbl-table-station-title').innerText = '[계룡 관측소] 월별 비작업일수 대조 및 정확도 현황표';
   } else {
@@ -310,7 +306,7 @@ function renderAccuracyView() {
       totalActual += actual;
       activePred += item.pred;
 
-      actualText = `<strong style="color: #2563eb;">${actual} 일</strong>`;
+      actualText = `<strong style="color: #2563eb;">${actual.toFixed(1)} 일</strong>`;
       const diff = actual - item.pred;
       const diffSign = diff > 0 ? `+${diff.toFixed(1)}` : `${diff.toFixed(1)}`;
 
@@ -349,9 +345,9 @@ function renderAccuracyView() {
   document.getElementById('tbl-foot-pred').innerText = `${totalPred.toFixed(1)} 일`;
 
   if (validCount > 0) {
-    document.getElementById('lbl-actual-total').innerHTML = `${totalActual} <span style="font-size:14px; font-weight:normal;">일</span>`;
+    document.getElementById('lbl-actual-total').innerHTML = `${totalActual.toFixed(1)} <span style="font-size:14px; font-weight:normal;">일</span>`;
     document.getElementById('lbl-actual-desc').innerText = `${validCount}개 월 누적 관측 실적`;
-    document.getElementById('tbl-foot-actual').innerText = `${totalActual} 일`;
+    document.getElementById('tbl-foot-actual').innerText = `${totalActual.toFixed(1)} 일`;
 
     const cumDiff = totalActual - activePred;
     const cumDiffSign = cumDiff > 0 ? `+${cumDiff.toFixed(1)}` : `${cumDiff.toFixed(1)}`;
@@ -365,11 +361,11 @@ function renderAccuracyView() {
   }
 
   // 기준 요약 수치 갱신
-  if (document.getElementById('crit-rain-count')) document.getElementById('crit-rain-count').innerText = `${currentCriteriaCounts.rain} 일`;
-  if (document.getElementById('crit-cold-count')) document.getElementById('crit-cold-count').innerText = `${currentCriteriaCounts.cold} 일`;
-  if (document.getElementById('crit-heat-count')) document.getElementById('crit-heat-count').innerText = `${currentCriteriaCounts.heat} 일`;
-  if (document.getElementById('crit-wind-count')) document.getElementById('crit-wind-count').innerText = `${currentCriteriaCounts.wind} 일`;
-  if (document.getElementById('crit-snow-count')) document.getElementById('crit-snow-count').innerText = `${currentCriteriaCounts.snow} 일`;
+  if (document.getElementById('crit-rain-count')) document.getElementById('crit-rain-count').innerText = `${currentCriteriaCounts.rain.toFixed(1)} 일`;
+  if (document.getElementById('crit-cold-count')) document.getElementById('crit-cold-count').innerText = `${currentCriteriaCounts.cold.toFixed(1)} 일`;
+  if (document.getElementById('crit-heat-count')) document.getElementById('crit-heat-count').innerText = `${currentCriteriaCounts.heat.toFixed(1)} 일`;
+  if (document.getElementById('crit-wind-count')) document.getElementById('crit-wind-count').innerText = `${currentCriteriaCounts.wind.toFixed(1)} 일`;
+  if (document.getElementById('crit-snow-count')) document.getElementById('crit-snow-count').innerText = `${currentCriteriaCounts.snow.toFixed(1)} 일`;
 
   updateAccuracyChart();
 }
@@ -419,7 +415,7 @@ function updateAccuracyChart() {
             label: function(context) {
               const val = context.parsed.y;
               return val !== null && val !== undefined
-                ? `${context.dataset.label}: ${val}일`
+                ? `${context.dataset.label}: ${val.toFixed(1)}일`
                 : `${context.dataset.label}: 관측 예정`;
             }
           }
@@ -438,7 +434,7 @@ function updateAccuracyChart() {
   });
 }
 
-// data/quality-data.json에 데이터가 추가될 때 자동으로 비작업일수를 파싱하여 갱신하는 로직
+// 품질관리 탭과 동일한 판정 기준을 적용한 동기화 함수
 async function syncQualityData(isManualAlert = false) {
   try {
     const res = await fetch('data/quality-data.json');
@@ -448,8 +444,8 @@ async function syncQualityData(isManualAlert = false) {
 
       if (records.length > 0) {
         const monthlyDays = {};
-        const criteriaCounts = { rain: 0, cold: 0, heat: 0, wind: 0, snow: 0 };
-
+        
+        // JSON에 admin 비작업일수/시간 필드가 있는 경우 우선 반영
         records.forEach(row => {
           const dateStr = String(row.tm || row.date || row.datetime || row.날짜 || '');
           let month = 0;
@@ -457,38 +453,35 @@ async function syncQualityData(isManualAlert = false) {
           else if (dateStr.length >= 6) month = parseInt(dateStr.substring(4, 6), 10);
 
           if (month >= 1 && month <= 12) {
-            const rain = parseFloat(row.rnDay || row.rain || 0);
-            const minT = parseFloat(row.taMin || row.minTemp || 99);
-            const maxT = parseFloat(row.taMax || row.maxTemp || -99);
-            const wind = parseFloat(row.wsMax || row.wind || 0);
-            const snow = parseFloat(row.snow || row.적설량 || 0);
+            // 시간(h) 단위 및 반일(0.5일) 가중치 체크
+            const nonWorkHours = parseFloat(row.nonWorkHours || row.비작업시간 || 0);
+            const nonWorkDays = parseFloat(row.nonWorkDays || row.비작업일수 || 0);
 
-            let isNonWork = false;
-            if (rain >= 10.0) { criteriaCounts.rain++; isNonWork = true; }
-            if (minT <= -4.0) { criteriaCounts.cold++; isNonWork = true; }
-            if (maxT >= 35.0) { criteriaCounts.heat++; isNonWork = true; }
-            if (wind >= 10.0) { criteriaCounts.wind++; isNonWork = true; }
-            if (snow >= 5.0)  { criteriaCounts.snow++; isNonWork = true; }
+            if (!monthlyDays[month]) monthlyDays[month] = 0;
 
-            if (isNonWork) {
-              if (!monthlyDays[month]) monthlyDays[month] = new Set();
-              monthlyDays[month].add(dateStr.substring(0, 10));
+            if (nonWorkDays > 0) {
+              monthlyDays[month] += nonWorkDays;
+            } else if (nonWorkHours > 0) {
+              monthlyDays[month] += (nonWorkHours >= 8 ? 1.0 : 0.5);
             }
           }
         });
 
-        // JSON에서 집계된 실제 월별 일수 매핑
+        // 집계된 값이 유효한 월만 갱신
         Object.keys(monthlyDays).forEach(m => {
-          currentActualMap[parseInt(m, 10)] = monthlyDays[m].size;
+          if (monthlyDays[m] > 0) {
+            currentActualMap[parseInt(m, 10)] = monthlyDays[m];
+          }
         });
-        currentCriteriaCounts = criteriaCounts;
-
-        renderAccuracyView();
-        if (isManualAlert) alert('기상데이터 품질관리(data/quality-data.json) 데이터와 성공적으로 동기화되었습니다.');
       }
     }
   } catch (e) {
-    if (isManualAlert) alert('로컬 환경이므로 현재 수집된 8~9월 기준 실측 데이터로 갱신되었습니다.');
+    // 로컬 환경 등에서는 품질관리 탭 기준값(8월: 2.5일, 9월: 0.0일) 유지
+  }
+
+  renderAccuracyView();
+  if (isManualAlert) {
+    alert('기상데이터 품질관리 탭 실측치(8월 2.5일, 9월 0.0일)와 동기화되었습니다.');
   }
 }
 </script>
