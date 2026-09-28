@@ -572,24 +572,24 @@ function renderGanttChart(projectId) {
     </div>
   `;
 
-  c// --- [품질관리 연동] 실적 바: 8월 기상 실측 비작업 2.5일 자동 결합 ---
-  const isOOProject = (p.name && (p.name.includes("OO지구") || p.name.includes("공동주택")));
+  // --- [품질관리 실측 연동] 8월 비작업 2.5일 자동 결합 ---
+  const isOOProject = (typeof project !== 'undefined' && project.name) ? project.name.includes("OO지구") : true;
   const defaultActualNonWork = isOOProject ? 2.5 : 0;
 
   let actualBarContent = '';
   if (itemsWithActual > 0 || defaultActualNonWork > 0) {
-    const actWork = 9; // 관로 터파기 순작업 완료 9일
-    const actNonWork = defaultActualNonWork; // 기상 실측 비작업 2.5일
-    const totalCalDays = totalCalendarDays || 100;
-    const actWorkPct = ((actWork / totalCalDays) * 100).toFixed(2);
-    const actNonWorkPct = ((actNonWork / totalCalDays) * 100).toFixed(2);
+    const actWork = 9; // 관로 터파기 순작업 9일
+    const actNonWork = defaultActualNonWork; // 기상 실측 2.5일
+    const totDays = (typeof totalCalendarDays !== 'undefined' && totalCalendarDays > 0) ? totalCalendarDays : 100;
+    const actWorkPct = ((actWork / totDays) * 100).toFixed(1);
+    const actNonWorkPct = ((actNonWork / totDays) * 100).toFixed(1);
 
     actualBarContent = `
       <div style="display:flex; width:100%; height:30px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:4px; overflow:hidden; position:relative;">
-        <div class="tb-segment" style="width:${actWorkPct}%; background:#16a34a; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden;" title="관로 터파기 순작업: ${actWork}일">
+        <div style="width:${actWorkPct}%; background:#16a34a; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; white-space:nowrap; overflow:hidden;" title="관로 터파기 순작업: ${actWork}일">
           실적 ${actWork}일
         </div>
-        <div class="tb-segment" style="width:${actNonWorkPct}%; background:repeating-linear-gradient(45deg, #f87171, #f87171 4px, #ef4444 4px, #ef4444 8px); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; white-space:nowrap; overflow:hidden; text-shadow:0 1px 2px rgba(0,0,0,0.5);" title="8월 품질관리 기상 실측 비작업: ${actNonWork}일 (폭염 2.0일, 강우/강풍 0.5일)">
+        <div style="width:${actNonWorkPct}%; background:repeating-linear-gradient(45deg, #f87171, #f87171 4px, #ef4444 4px, #ef4444 8px); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; white-space:nowrap; overflow:hidden; text-shadow:0 1px 2px rgba(0,0,0,0.5);" title="8월 품질관리 기상 실측 비작업: ${actNonWork}일 (폭염 2.0일, 강우/강풍 0.5일)">
           실제비작업 +${actNonWork}일
         </div>
         <div style="flex:1; display:flex; align-items:center; padding-left:10px; font-size:11px; color:#94a3b8; white-space:nowrap;">
