@@ -162,14 +162,15 @@
   </div>
 </div>
 
-<!-- 신규 현장 등록 모달 -->
+<!-- 현장 추가 / 수정 모달 -->
 <div class="modal-backdrop" id="modal-project">
   <div class="modal-dialog">
     <div class="modal-header">
-      <h3 style="margin:0; font-size:15px;">신규 현장 추가</h3>
+      <h3 style="margin:0; font-size:15px;" id="modal-project-title">신규 현장 추가</h3>
       <button onclick="closeModal()" style="border:none; background:none; font-size:18px; cursor:pointer; color:#64748b;">&times;</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="m-inp-id" value="">
       <div>
         <label style="font-size:12px; font-weight:600; color:#64748b;">공사 현장명</label>
         <input type="text" id="m-inp-name" class="input" style="width:100%; margin-top:4px;" placeholder="예: OO지구 공동주택 신축공사">
@@ -200,7 +201,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-sm" onclick="closeModal()">취소</button>
-      <button class="btn btn-primary btn-sm" onclick="saveNewProject()">현장 등록</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNewProject()">저장</button>
     </div>
   </div>
 </div>
@@ -255,7 +256,6 @@ function autoDetectStation(addr) {
   let matched = mapping[kw];
 
   if (!matched) {
-    // 부분 일치 탐색
     for (const [fullAddr, info] of Object.entries(mapping)) {
       if (fullAddr.includes(kw)) {
         matched = info;
@@ -306,7 +306,6 @@ function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
   const stations = FULL_WEATHER_DATA.stations || {};
   let monthlyData = stations[stationName];
 
-  // 폴백
   if (!monthlyData) {
     if (stationName === '계룡') monthlyData = [9.8, 5.7, 1.7, 2.2, 2.8, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 6.3];
     else if (stationName === '송악') monthlyData = [4.5, 2.9, 0.8, 1.3, 2.1, 1.2, 3.8, 5.2, 3.2, 1.2, 1.4, 4.2];
@@ -326,7 +325,6 @@ function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
     curMonthIdx = (curMonthIdx + 1) % 12;
   }
 
-  // 주휴일(작업 5일당 약 2일) 및 겹침 보정
   const holidayDays = Math.ceil(workDays * (2 / 5));
   const finalNonWork = Math.ceil((totalWeatherNonWork + holidayDays) * 0.85);
 
@@ -381,6 +379,7 @@ function renderProjectCards() {
         <div class="row gap-8" style="margin-top:12px;">
           <a href="quantity.html" class="btn btn-sm" style="flex:1; text-align:center; text-decoration:none;">물량 산정</a>
           <a href="schedule.html" class="btn btn-sm" style="flex:1; text-align:center; text-decoration:none;">공정표</a>
+          <button class="btn btn-sm" style="color:#2563eb; border-color:#bfdbfe;" onclick="openEditProjectModal('${p.id}')">수정</button>
           <button class="btn btn-sm" style="color:#ef4444; border-color:#fca5a5;" onclick="deleteProject('${p.id}')">삭제</button>
         </div>
       </div>
@@ -724,10 +723,35 @@ function clearActualDates(projectId, itemId) {
 }
 
 function openNewProjectModal() {
+  document.getElementById('modal-project-title').textContent = '신규 현장 추가';
+  document.getElementById('m-inp-id').value = '';
   document.getElementById('m-inp-name').value = '';
+  document.getElementById('m-inp-start').value = '2026-03-01';
+  document.getElementById('m-inp-end').value = '2027-02-28';
   document.getElementById('m-inp-addr').value = '';
   document.getElementById('m-inp-desc').value = '';
   document.getElementById('addr-match-guide').innerHTML = '';
+  document.getElementById('modal-project').style.display = 'flex';
+}
+
+function openEditProjectModal(pid) {
+  const db = loadDB();
+  const proj = (db.projects || []).find(p => p.id === pid);
+  if (!proj) return;
+
+  document.getElementById('modal-project-title').textContent = '현장 정보 수정';
+  document.getElementById('m-inp-id').value = proj.id;
+  document.getElementById('m-inp-name').value = proj.name || '';
+  document.getElementById('m-inp-start').value = proj.startDate || proj.start || '2026-03-01';
+  document.getElementById('m-inp-end').value = proj.endDate || proj.end || '2027-02-28';
+  document.getElementById('m-inp-addr').value = proj.addr || '';
+  document.getElementById('m-inp-desc').value = proj.desc || '';
+  
+  if (proj.station) {
+    document.getElementById('m-sel-station').value = proj.station;
+  }
+  autoDetectStation(proj.addr || '');
+
   document.getElementById('modal-project').style.display = 'flex';
 }
 
@@ -736,6 +760,7 @@ function closeModal() {
 }
 
 function saveNewProject() {
+  const pid = document.getElementById('m-inp-id').value;
   const name = document.getElementById('m-inp-name').value.trim();
   const start = document.getElementById('m-inp-start').value;
   const end = document.getElementById('m-inp-end').value;
@@ -749,25 +774,40 @@ function saveNewProject() {
   }
 
   const db = loadDB();
-  const newProject = {
-    id: 'P_' + Date.now(),
-    name: name,
-    startDate: start,
-    endDate: end,
-    addr: addr,
-    station: station,
-    desc: desc,
-    status: '공사중'
-  };
-
   if (!db.projects) db.projects = [];
-  db.projects.push(newProject);
+
+  if (pid) {
+    // 기존 현장 수정
+    const pIdx = db.projects.findIndex(p => p.id === pid);
+    if (pIdx !== -1) {
+      db.projects[pIdx].name = name;
+      db.projects[pIdx].startDate = start;
+      db.projects[pIdx].endDate = end;
+      db.projects[pIdx].addr = addr;
+      db.projects[pIdx].station = station;
+      db.projects[pIdx].desc = desc;
+    }
+  } else {
+    // 신규 현장 등록
+    const newProject = {
+      id: 'P_' + Date.now(),
+      name: name,
+      startDate: start,
+      endDate: end,
+      addr: addr,
+      station: station,
+      desc: desc,
+      status: '공사중'
+    };
+    db.projects.push(newProject);
+  }
+
   saveDB(db);
 
   closeModal();
   renderProjectCards();
   initGanttProjectSelector();
-  alert(`신규 현장 '${name}' 등록 완료!\n관측소 [${station}]의 10개년 월평균 비작업일수 전체 통계가 자동 연동되었습니다.`);
+  alert(pid ? `'${name}' 현장 정보가 수정되었습니다.` : `신규 현장 '${name}' 등록 완료!`);
 }
 
 function deleteProject(pid) {
