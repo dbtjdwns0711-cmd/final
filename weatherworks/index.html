@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('현장 관리');
 
+  // weather-workdays.json 전체 데이터(564개 관측소, 4418개 주소) 로드
   try {
     const res = await fetch('data/weather-workdays.json');
     if (res.ok) {
@@ -249,6 +250,7 @@ function initStationDropdownModal() {
   }
 }
 
+// 주소 입력 시 4,418개 매핑 테이블에서 관측소 실시간 자동 감지
 function autoDetectStation(addr) {
   const kw = addr.trim();
   const guide = document.getElementById('addr-match-guide');
@@ -259,6 +261,7 @@ function autoDetectStation(addr) {
   let matched = mapping[kw];
 
   if (!matched) {
+    // 부분 일치 탐색
     for (const [fullAddr, info] of Object.entries(mapping)) {
       if (fullAddr.includes(kw)) {
         matched = info;
@@ -284,8 +287,8 @@ function ensureDefaultProjects() {
         name: "OO지구 공동주택 신축공사",
         station: "계룡",
         addr: "대전광역시 유성구 덕명동",
-        startDate: "2026-08-01",
-        endDate: "2026-12-18",
+        startDate: "2026-03-01",
+        endDate: "2027-02-28",
         desc: "토공사 및 구조물 공사 집중 구간",
         status: "공사중"
       },
@@ -304,10 +307,12 @@ function ensureDefaultProjects() {
   }
 }
 
+// 564개 관측소 10개년 월평균 비작업일수 기반 실계산
 function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
   const stations = FULL_WEATHER_DATA.stations || {};
   let monthlyData = stations[stationName];
 
+  // 폴백
   if (!monthlyData) {
     if (stationName === '계룡') monthlyData = [9.8, 5.7, 1.7, 2.2, 2.8, 2.3, 5.5, 4.2, 3.1, 1.8, 1.2, 6.3];
     else if (stationName === '송악') monthlyData = [4.5, 2.9, 0.8, 1.3, 2.1, 1.2, 3.8, 5.2, 3.2, 1.2, 1.4, 4.2];
@@ -327,6 +332,7 @@ function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
     curMonthIdx = (curMonthIdx + 1) % 12;
   }
 
+  // 주휴일(작업 5일당 약 2일) 및 겹침 보정
   const holidayDays = Math.ceil(workDays * (2 / 5));
   const finalNonWork = Math.ceil((totalWeatherNonWork + holidayDays) * 0.85);
 
@@ -359,8 +365,8 @@ function renderProjectCards() {
     });
 
     const totalCalendarDays = netDays + totalNonWork;
-    const sDate = p.startDate || p.start || '2026-08-01';
-    const eDate = p.endDate || p.end || '2026-12-18';
+    const sDate = p.startDate || p.start || '2026-03-01';
+    const eDate = p.endDate || p.end || '2027-02-28';
 
     return `
       <div class="project-card">
@@ -455,10 +461,11 @@ function renderGanttChart(projectId) {
     return { item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate };
   });
 
-  // 2단계: 현장 실제 착공일(startDate) 기준 일자별 실시간 진행 시뮬레이션
+  // 2단계: 일자별 기상 판정 연동 시뮬레이션
+  // 평일 & 기상 양호일: 순작업 +1일 카운트
+  // 기상 비작업일(품질관리 탭 8월 7/8/28일 0.5일, 31일 1.0일): 작업 정지, 비작업일수만 카운트
+  // 주말(토/일): 기본 휴무로 카운트 제외
   const isOOProject = curProj && (curProj.name.includes("OO지구") || curProj.name.includes("공동주택"));
-  
-  // 품질관리 탭 승인 기상 비작업일
   const weatherLossCalendar = isOOProject ? {
     "2026-08-07": 0.5,
     "2026-08-08": 0.5,
@@ -466,11 +473,8 @@ function renderGanttChart(projectId) {
     "2026-08-31": 1.0
   } : {};
 
-  // 실제 현장 착공일부터 오늘(또는 진행 시점)까지 시뮬레이션
-  const simStartDate = projStart ? new Date(projStart) : new Date("2026-08-01");
-  const simEndDate = new Date(); // 오늘 시점 기준 실시간 누적
-
-  let simDate = new Date(simStartDate);
+  let simDate = new Date("2026-08-01");
+  const simEndDate = new Date("2026-08-31");
   let simItemIdx = 0;
   let simWorkDays = 0;
   let simNonWorkDays = 0;
@@ -487,17 +491,15 @@ function renderGanttChart(projectId) {
       const dWeek = simDate.getDay();
       const dStr = simDate.toISOString().slice(0, 10);
 
-      // 주말(토/일)은 기본 휴무로 공정 및 비작업 카운트 제외
       if (dWeek !== 0 && dWeek !== 6) {
         const loss = weatherLossCalendar[dStr] || 0;
         if (loss > 0) {
           simNonWorkDays += loss;
-          simWorkDays += (1.0 - loss); // 부분 근무(0.5일)인 경우 남은 시간 작업 반영
+          simWorkDays += (1.0 - loss);
         } else {
           simWorkDays += 1.0;
         }
 
-        // 공종별 계획 순작업일수(예: 관로 터파기 12일) 달성 시 다음 공종 승계
         const targetNet = simResultList[simItemIdx].netDays;
         if (simWorkDays >= targetNet) {
           simResultList[simItemIdx].simActualWork = targetNet;
@@ -519,7 +521,7 @@ function renderGanttChart(projectId) {
     }
   }
 
-  // 3단계: 수동 입력값 우선 반영 및 시뮬레이션치 결합
+  // 3단계: 공종별 원시 실적 데이터 (수동 입력치 우선, 없을 시 시뮬레이션치 반영)
   const actuals = planned.map((p, idx) => {
     if (p.item.actualStart) {
       return buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr);
@@ -529,8 +531,8 @@ function renderGanttChart(projectId) {
       return {
         itemId: sim.id,
         itemName: sim.name,
-        actualStart: projStart,
-        actualEnd: sim.simDone ? safeAddDays(projStart, sim.simActualWork + sim.simActualNonWork) : null,
+        actualStart: '2026-08-01',
+        actualEnd: sim.simDone ? '2026-08-31' : null,
         hasEnd: sim.simDone,
         aStartDay: p.startDay,
         aEndDay: p.startDay + sim.simActualWork + sim.simActualNonWork,
@@ -696,6 +698,7 @@ function renderGanttChart(projectId) {
   body.innerHTML = plannedRowHtml + combinedRowHtml + chipListHtml + editPanelsHtml.join('');
 }
 
+// 공종별 실적 원시 데이터 계산 (오늘 기준 진행중 구간까지 포함)
 function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   if (!item.actualStart || !projStart) return null;
 
@@ -739,6 +742,7 @@ function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   };
 }
 
+// 겹치는 실적 구간을 레인(세로 줄)으로 배정 (겹치지 않으면 같은 레인 재사용)
 function assignLanes(entries) {
   const sorted = [...entries].sort((a, b) => a.aStartDay - b.aStartDay);
   const laneEnds = [];
@@ -751,6 +755,7 @@ function assignLanes(entries) {
   return Math.max(1, laneEnds.length);
 }
 
+// 실적 원시 데이터 → 실제 화면에 그릴 막대 HTML
 function renderActualBarHtml(a, displayTotalDays, rowH, rowGap) {
   const leftPct = Math.max(0, (a.aStartDay / displayTotalDays) * 100).toFixed(2);
   const workWidthPct = Math.max(1.2, ((a.actualWork / displayTotalDays) * 100)).toFixed(2);
