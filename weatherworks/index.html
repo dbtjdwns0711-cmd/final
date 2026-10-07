@@ -29,11 +29,11 @@
   .gantt-item-label { width: 260px; flex-shrink: 0; font-weight: 600; color: #1e293b; padding-right: 12px; box-sizing: border-box; }
   .gantt-timeline-track { flex: 1; position: relative; height: 34px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0; overflow: hidden; }
   
-  .gantt-bar-work { position: absolute; top: 3px; bottom: 3px; border-radius: 4px 0 0 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), 0 1px 2px rgba(0,0,0,0.15); text-shadow: 0 1px 1px rgba(0,0,0,0.35); }
+  .gantt-bar-work { position: absolute; top: 3px; bottom: 3px; border-radius: 4px 0 0 4px; display: flex; align-items: center; justify-content: center; padding: 0 4px; color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), 0 1px 2px rgba(0,0,0,0.15); text-shadow: 0 1px 1px rgba(0,0,0,0.35); }
   .gantt-bar-work .bar-sub { font-weight: 400; opacity: 0.9; margin-left: 6px; font-size: 10.5px; }
   .gantt-bar-work.bar-label-outside { color: #1e293b; text-shadow: none; justify-content: flex-start; }
-  .gantt-bar-work.bar-label-outside .bar-text { position: absolute; left: calc(100% + 6px); white-space: nowrap; }
-  .gantt-bar-weather { position: absolute; top: 3px; bottom: 3px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 6px, #e2e8f0 6px, #e2e8f0 12px); border-left: 2px solid #94a3b8; display: flex; align-items: center; padding: 0 6px; color: #334155; font-size: 10.5px; font-weight: 700; white-space: nowrap; z-index: 1; }
+  .gantt-bar-work.bar-label-outside .bar-text { position: absolute; left: calc(100% + 4px); white-space: nowrap; font-weight: 700; font-size: 11px; }
+  .gantt-bar-weather { position: absolute; top: 3px; bottom: 3px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 6px, #e2e8f0 6px, #e2e8f0 12px); border-left: 2px solid #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0 2px; color: #334155; font-size: 10px; font-weight: 700; white-space: nowrap; z-index: 1; }
 
   .gantt-legend { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #64748b; }
   .legend-box { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 5px; }
@@ -45,8 +45,8 @@
   .gantt-actual-row { display: flex; align-items: center; padding: 4px 0; font-size: 12px; }
   .gantt-actual-label { width: 260px; flex-shrink: 0; padding-right: 12px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; }
   .gantt-actual-track { flex: 1; position: relative; height: 20px; background: #fafafa; border-radius: 4px; border: 1px dashed #e2e8f0; overflow: hidden; }
-  .gantt-bar-actual { position: absolute; top: 2px; bottom: 2px; border-radius: 4px 0 0 4px; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
-  .gantt-bar-actual-nonwork { position: absolute; top: 2px; bottom: 2px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 6px, #fecaca 6px, #fecaca 12px); border-left: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; padding: 0 6px; color: #7f1d1d; font-size: 10px; font-weight: 700; white-space: nowrap; z-index: 1; }
+  .gantt-bar-actual { position: absolute; top: 2px; bottom: 2px; border-radius: 4px 0 0 4px; display: flex; align-items: center; justify-content: center; padding: 0 6px; color: #fff; font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
+  .gantt-bar-actual-nonwork { position: absolute; top: 2px; bottom: 2px; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 6px, #fecaca 6px, #fecaca 12px); border-left: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; padding: 0 4px; color: #7f1d1d; font-size: 10px; font-weight: 700; white-space: nowrap; z-index: 1; }
   .gantt-plan-end-marker { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed #94a3b8; z-index: 3; }
   .actual-status-badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
   .status-ontime { background:#ecfdf5; color:#059669; }
@@ -61,8 +61,9 @@
   /* 공종 목록 칩 */
   .gantt-item-chip-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 0 4px; border-top: 1px dashed #e2e8f0; margin-top: 6px; }
   .gantt-item-chip { display: flex; align-items: center; gap: 7px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+  .chip-num { font-weight: 800; color: #2563eb; font-size: 12px; }
   .chip-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .chip-name { font-weight: 600; color: #1e293b; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-name { font-weight: 600; color: #1e293b; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip-days { color: #64748b; font-size: 11px; }
 
   /* 모달 */
@@ -72,13 +73,12 @@
   .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* 타임라인 겹침 방지 및 실측 비작업 빗금 스타일 */
   .timeline-bar-flex {
     display: flex;
     width: 100%;
-    height: 36px;
+    height: 34px;
     background: #f1f5f9;
-    border-radius: 6px;
+    border-radius: 4px;
     overflow: hidden;
     position: relative;
   }
@@ -93,12 +93,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     padding: 0 4px;
-    transition: opacity 0.15s;
-    cursor: pointer;
-  }
-  .tb-segment:hover {
-    opacity: 0.9;
-    filter: brightness(1.08);
   }
   .tb-nonwork-plan {
     background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 4px, #cbd5e1 4px, #cbd5e1 8px) !important;
@@ -445,7 +439,7 @@ function renderGanttChart(projectId) {
   });
 
   const totalCalendarDays = scheduleChain.reduce((s, c) => s + c.calendarDays, 0);
-  const projStart = curProj ? (curProj.startDate || '2026-08-01') : '2026-08-01';
+  const projStart = curProj ? curProj.startDate : null;
   const todayStr = fmtDate(new Date());
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#4f46e5'];
 
@@ -461,93 +455,10 @@ function renderGanttChart(projectId) {
     return { item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate };
   });
 
-  // 2단계: 일자별 기상 판정 연동 시뮬레이션
-  // 평일 & 기상 양호일: 순작업 +1일 카운트
-  // 기상 비작업일(품질관리 탭 8월 7/8/28일 0.5일, 31일 1.0일): 작업 정지, 비작업일수만 카운트
-  // 주말(토/일): 기본 휴무로 카운트 제외
-  const isOOProject = curProj && (curProj.name.includes("OO지구") || curProj.name.includes("공동주택"));
-  const weatherLossCalendar = isOOProject ? {
-    "2026-08-07": 0.5,
-    "2026-08-08": 0.5,
-    "2026-08-28": 0.5,
-    "2026-08-31": 1.0
-  } : {};
+  // 2단계: 수동 입력/저장된 원시 실적 데이터 수집
+  const actuals = planned.map(p => buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr));
 
-  let simDate = new Date("2026-08-01");
-  const simEndDate = new Date("2026-08-31");
-  let simItemIdx = 0;
-  let simWorkDays = 0;
-  let simNonWorkDays = 0;
-
-  const simResultList = scheduleChain.map(item => ({
-    ...item,
-    simActualWork: 0,
-    simActualNonWork: 0,
-    simDone: false
-  }));
-
-  if (isOOProject && simResultList.length > 0) {
-    while (simDate <= simEndDate && simItemIdx < simResultList.length) {
-      const dWeek = simDate.getDay();
-      const dStr = simDate.toISOString().slice(0, 10);
-
-      if (dWeek !== 0 && dWeek !== 6) {
-        const loss = weatherLossCalendar[dStr] || 0;
-        if (loss > 0) {
-          simNonWorkDays += loss;
-          simWorkDays += (1.0 - loss);
-        } else {
-          simWorkDays += 1.0;
-        }
-
-        const targetNet = simResultList[simItemIdx].netDays;
-        if (simWorkDays >= targetNet) {
-          simResultList[simItemIdx].simActualWork = targetNet;
-          simResultList[simItemIdx].simActualNonWork = simNonWorkDays;
-          simResultList[simItemIdx].simDone = true;
-
-          simItemIdx++;
-          simWorkDays = 0;
-          simNonWorkDays = 0;
-        }
-      }
-      simDate.setDate(simDate.getDate() + 1);
-    }
-
-    if (simItemIdx < simResultList.length) {
-      simResultList[simItemIdx].simActualWork = Math.min(simResultList[simItemIdx].netDays, simWorkDays);
-      simResultList[simItemIdx].simActualNonWork = simNonWorkDays;
-      simResultList[simItemIdx].simDone = (simResultList[simItemIdx].simActualWork >= simResultList[simItemIdx].netDays);
-    }
-  }
-
-  // 3단계: 공종별 원시 실적 데이터 (수동 입력치 우선, 없을 시 시뮬레이션치 반영)
-  const actuals = planned.map((p, idx) => {
-    if (p.item.actualStart) {
-      return buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr);
-    }
-    const sim = simResultList[idx];
-    if (sim && (sim.simActualWork > 0 || sim.simActualNonWork > 0)) {
-      return {
-        itemId: sim.id,
-        itemName: sim.name,
-        actualStart: '2026-08-01',
-        actualEnd: sim.simDone ? '2026-08-31' : null,
-        hasEnd: sim.simDone,
-        aStartDay: p.startDay,
-        aEndDay: p.startDay + sim.simActualWork + sim.simActualNonWork,
-        elapsedSpan: sim.simActualWork + sim.simActualNonWork,
-        actualWork: sim.simActualWork,
-        actualNonWork: sim.simActualNonWork,
-        statusClass: sim.simDone ? 'status-ontime' : 'status-progress',
-        statusLabel: sim.simDone ? '완료' : '진행중',
-        barColor: sim.simDone ? '#059669' : '#2563eb',
-        summaryPlain: `순작업 ${sim.simActualWork}일 + 실제비작업 ${sim.simActualNonWork}일`
-      };
-    }
-    return null;
-  });
-
+  // 3단계: 통합 타임라인 스케일 구성
   const maxActualEndDay = actuals.reduce((m, a) => a ? Math.max(m, a.aEndDay) : m, 0);
   const displayTotalDays = Math.max(totalCalendarDays, maxActualEndDay);
   const isExtended = displayTotalDays > totalCalendarDays;
@@ -581,13 +492,15 @@ function renderGanttChart(projectId) {
     const workWidthPct = ((item.netDays / displayTotalDays) * 100).toFixed(2);
     const nonWorkWidthPct = ((item.nonWorkDays / displayTotalDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
+    const seqNum = idx + 1; // 공종 번호 (1, 2, 3...)
 
-    const isNarrow = parseFloat(workWidthPct) < 8;
-    const labelText = `${item.name} (${item.netDays}일)`;
+    const isNarrow = parseFloat(workWidthPct) < 3.5;
+    const labelText = `${seqNum} (${item.netDays}일)`; // 막대 내부 잘림 방지를 위해 번호(일수)로 간결 표기
+
     combinedPlannedBars.push(`
       <div class="gantt-bar-work${isNarrow ? ' bar-label-outside' : ''}" 
            style="left:${leftPct}%; width:${workWidthPct}%; background:${color};"
-           title="${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
+           title="[${seqNum}] ${item.name}&#10;• 계획: ${plannedStartDate || ''} ~ ${plannedEndDate || ''}&#10;• 순 작업일수: ${item.netDays}일 (${startDay}일차 ~ ${workEndDay}일차)">
         ${isNarrow ? `<span class="bar-text">${labelText}</span>` : labelText}
       </div>
       <div class="gantt-bar-weather" 
@@ -604,8 +517,10 @@ function renderGanttChart(projectId) {
     const statusLabel = actual ? actual.statusLabel : '미착공';
     const summaryPlain = actual ? actual.summaryPlain : '';
 
+    // 하단 공종 목록 범례 (번호 + 색상 1:1 매칭)
     chipsHtml.push(`
       <div class="gantt-item-chip">
+        <span class="chip-num">${seqNum}.</span>
         <span class="chip-dot" style="background:${color};"></span>
         <span class="chip-name" title="${item.name}">${item.name}</span>
         <span class="chip-days mono">${item.netDays}+${item.nonWorkDays}=${item.calendarDays}일</span>
@@ -616,7 +531,7 @@ function renderGanttChart(projectId) {
 
     editPanelsHtml.push(`
       <div class="actual-edit-panel" id="actual-edit-${item.id}" style="display:none; flex-wrap:wrap;">
-        <strong style="width:100%; color:#475569;">${item.name}</strong>
+        <strong style="width:100%; color:#475569;">${seqNum}. ${item.name}</strong>
         <label>실제 착공일 <input type="date" id="actual-start-${item.id}" value="${item.actualStart || ''}"></label>
         <label>실제 완료일 <input type="date" id="actual-end-${item.id}" value="${item.actualEnd || ''}"></label>
         <label>기간 중 비작업일수 <input type="number" min="0" step="0.5" id="actual-nonwork-${item.id}" style="width:60px;" value="${item.actualNonWorkDays || ''}"> 일</label>
@@ -646,36 +561,22 @@ function renderGanttChart(projectId) {
     </div>
   `;
 
-  // 4단계: 실적 바 (전체 공종 통합) 생성
+  // 4단계: 실적 막대 생성 (실적 입력 데이터 기준)
   let totalActWork = 0;
   let totalActNonWork = 0;
+  const actualBarsHtml = [];
+
   actuals.forEach(a => {
     if (a) {
       totalActWork += a.actualWork;
       totalActNonWork += a.actualNonWork;
+      actualBarsHtml.push(renderActualBarHtml(a, displayTotalDays, 22, 4));
     }
   });
 
   let actualBarContent = '';
   if (itemsWithActual > 0) {
-    const actWorkPct = ((totalActWork / displayTotalDays) * 100).toFixed(2);
-    const actNonWorkPct = ((totalActNonWork / displayTotalDays) * 100).toFixed(2);
-    const totalSpent = (totalActWork + totalActNonWork).toFixed(1);
-
-    actualBarContent = `
-      <div class="timeline-bar-flex" style="border: 1px dashed #cbd5e1; background: #f8fafc; height:100%;">
-        <div class="tb-segment tb-work-actual" style="width:${actWorkPct}%;" title="실제 누적 순작업: ${totalActWork}일 완료">
-          실적 ${totalActWork}일
-        </div>
-        ${totalActNonWork > 0 ? `
-        <div class="tb-segment tb-nonwork-actual" style="width:${actNonWorkPct}\%;" title="품질관리 탭 실제 기상 비작업: +${totalActNonWork}일 발생 (폭염 2.0일, 강우/강풍 0.5일)">
-          실제비작업 +${totalActNonWork}일
-        </div>` : ''}
-        <div style="flex:1; display:flex; align-items:center; padding-left:10px; font-size:11px; color:#94a3b8; white-space:nowrap;">
-          잔여 공정 대기중 (실제 소요: ${totalSpent}일)
-        </div>
-      </div>
-    `;
+    actualBarContent = actualBarsHtml.join('');
   } else {
     actualBarContent = `<div style="color:#94a3b8; font-size:11.5px; line-height:34px; padding-left:10px;">입력된 실적이 없습니다. 하단 공종에서 [실적 입력]을 진행해주세요.</div>`;
   }
@@ -698,7 +599,7 @@ function renderGanttChart(projectId) {
   body.innerHTML = plannedRowHtml + combinedRowHtml + chipListHtml + editPanelsHtml.join('');
 }
 
-// 공종별 실적 원시 데이터 계산 (오늘 기준 진행중 구간까지 포함)
+// 공종별 실적 원시 데이터 계산
 function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   if (!item.actualStart || !projStart) return null;
 
@@ -742,7 +643,7 @@ function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   };
 }
 
-// 겹치는 실적 구간을 레인(세로 줄)으로 배정 (겹치지 않으면 같은 레인 재사용)
+// 겹치는 실적 구간을 레인(세로 줄)으로 배정
 function assignLanes(entries) {
   const sorted = [...entries].sort((a, b) => a.aStartDay - b.aStartDay);
   const laneEnds = [];
@@ -760,13 +661,13 @@ function renderActualBarHtml(a, displayTotalDays, rowH, rowGap) {
   const leftPct = Math.max(0, (a.aStartDay / displayTotalDays) * 100).toFixed(2);
   const workWidthPct = Math.max(1.2, ((a.actualWork / displayTotalDays) * 100)).toFixed(2);
   const nonWorkWidthPct = a.actualNonWork > 0 ? Math.max(1, ((a.actualNonWork / displayTotalDays) * 100)).toFixed(2) : 0;
-  const top = a.lane * (rowH + rowGap) + 4;
+  const top = 4;
   const reasonAttr = a.nonWorkReason ? `&#10;사유: ${a.nonWorkReason}` : '';
 
   return `
     <div class="gantt-bar-actual" style="left:${leftPct}%; width:${workWidthPct}%; top:${top}px; height:${rowH}px; bottom:auto; background:${a.barColor};"
          title="[${a.itemName}] 실적 작업: ${a.actualStart} ~ ${a.actualEnd || '진행중'}&#10;작업일: ${a.actualWork}일">
-      ${a.itemName} ${a.hasEnd ? '완료' : '진행중'} ${a.actualWork}일
+      실적 ${a.actualWork}일
     </div>
     ${a.actualNonWork > 0 ? `
     <div class="gantt-bar-actual-nonwork" style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}\%; width:${nonWorkWidthPct}%; top:${top}px; height:${rowH}px; bottom:auto;"
