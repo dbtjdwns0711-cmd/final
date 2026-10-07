@@ -178,11 +178,11 @@
       <div class="row gap-12">
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 착공일</label>
-          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;" value="2026-08-01">
+          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;" value="2026-03-01">
         </div>
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 준공예정일</label>
-          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;" value="2026-11-18">
+          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;" value="2027-02-28">
         </div>
       </div>
       <div>
@@ -278,12 +278,12 @@ function ensureDefaultProjects() {
     db.projects = [
       {
         id: "P_001",
-        name: "한밭대학교 관로공사",
+        name: "OO지구 공동주택 신축공사",
         station: "계룡",
         addr: "대전광역시 유성구 덕명동",
-        startDate: "2026-08-01",
-        endDate: "2026-11-18",
-        desc: "특이사항 없음",
+        startDate: "2026-03-01",
+        endDate: "2027-02-28",
+        desc: "토공사 및 구조물 공사 집중 구간",
         status: "공사중"
       },
       {
@@ -357,8 +357,8 @@ function renderProjectCards() {
     });
 
     const totalCalendarDays = netDays + totalNonWork;
-    const sDate = p.startDate || p.start || '2026-08-01';
-    const eDate = p.endDate || p.end || '2026-11-18';
+    const sDate = p.startDate || p.start || '2026-03-01';
+    const eDate = p.endDate || p.end || '2027-02-28';
 
     return `
       <div class="project-card">
@@ -438,7 +438,7 @@ function renderGanttChart(projectId) {
   });
 
   const totalCalendarDays = scheduleChain.reduce((s, c) => s + c.calendarDays, 0);
-  const projStart = curProj ? (curProj.startDate || '2026-08-01') : '2026-08-01';
+  const projStart = curProj ? curProj.startDate : null;
   const todayStr = fmtDate(new Date());
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#4f46e5'];
 
@@ -454,100 +454,10 @@ function renderGanttChart(projectId) {
     return { item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate };
   });
 
-  // 2단계: 실제 착공일(startDate) 기준 일자별 실시간 진행 시뮬레이션
-  const isTargetProject = curProj && (curProj.name.includes("한밭") || curProj.name.includes("OO지구") || curProj.name.includes("공동주택"));
-  
-  // 품질관리 탭 승인 기상 비작업일 (8월 7/8/28일 0.5일, 31일 1.0일)
-  const weatherLossCalendar = isTargetProject ? {
-    "2026-08-07": 0.5,
-    "2026-08-08": 0.5,
-    "2026-08-28": 0.5,
-    "2026-08-31": 1.0
-  } : {};
+  // 2단계: 수동 입력/저장된 원시 실적 데이터 수집
+  const actuals = planned.map(p => buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr));
 
-  // 착공일부터 오늘까지 하루씩 진행 카운트
-  const simStartDate = projStart ? new Date(projStart) : new Date("2026-08-01");
-  const simToday = new Date();
-
-  let simDate = new Date(simStartDate);
-  let simItemIdx = 0;
-  let simWorkDays = 0;
-  let simNonWorkDays = 0;
-
-  const simResultList = scheduleChain.map(item => ({
-    ...item,
-    simActualWork: 0,
-    simActualNonWork: 0,
-    simDone: false
-  }));
-
-  if (isTargetProject && simResultList.length > 0) {
-    while (simDate <= simToday && simItemIdx < simResultList.length) {
-      const dWeek = simDate.getDay();
-      const dStr = simDate.toISOString().slice(0, 10);
-
-      // 주말(토/일)은 기본 휴무로 카운트 제외
-      if (dWeek !== 0 && dWeek !== 6) {
-        const loss = weatherLossCalendar[dStr] || 0;
-        if (loss > 0) {
-          // 기상 비작업일: 순작업 정지, 비작업일수만 카운트
-          simNonWorkDays += loss;
-          simWorkDays += (1.0 - loss);
-        } else {
-          // 기상 양호일: 순작업 +1일
-          simWorkDays += 1.0;
-        }
-
-        // 해당 공종의 목표 순작업일수를 채우면 완료 후 다음 공종으로 승계
-        const targetNet = simResultList[simItemIdx].netDays;
-        if (simWorkDays >= targetNet) {
-          simResultList[simItemIdx].simActualWork = targetNet;
-          simResultList[simItemIdx].simActualNonWork = simNonWorkDays;
-          simResultList[simItemIdx].simDone = true;
-
-          simItemIdx++;
-          simWorkDays = 0;
-          simNonWorkDays = 0;
-        }
-      }
-      simDate.setDate(simDate.getDate() + 1);
-    }
-
-    // 현재 진행 중인 공종에 누적 실적 반영
-    if (simItemIdx < simResultList.length) {
-      simResultList[simItemIdx].simActualWork = Math.min(simResultList[simItemIdx].netDays, simWorkDays);
-      simResultList[simItemIdx].simActualNonWork = simNonWorkDays;
-      simResultList[simItemIdx].simDone = (simResultList[simItemIdx].simActualWork >= simResultList[simItemIdx].netDays);
-    }
-  }
-
-  // 3단계: 수동 입력/저장된 데이터 우선 적용 및 시뮬레이션치 합성
-  const actuals = planned.map((p, idx) => {
-    if (p.item.actualStart) {
-      return buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr);
-    }
-    const sim = simResultList[idx];
-    if (sim && (sim.simActualWork > 0 || sim.simActualNonWork > 0)) {
-      return {
-        itemId: sim.id,
-        itemName: sim.name,
-        actualStart: projStart,
-        actualEnd: sim.simDone ? safeAddDays(projStart, sim.simActualWork + sim.simActualNonWork) : null,
-        hasEnd: sim.simDone,
-        aStartDay: p.startDay,
-        aEndDay: p.startDay + sim.simActualWork + sim.simActualNonWork,
-        elapsedSpan: sim.simActualWork + sim.simActualNonWork,
-        actualWork: sim.simActualWork,
-        actualNonWork: sim.simActualNonWork,
-        statusClass: sim.simDone ? 'status-ontime' : 'status-progress',
-        statusLabel: sim.simDone ? '완료' : '진행중',
-        barColor: sim.simDone ? '#059669' : '#2563eb',
-        summaryPlain: `순작업 ${sim.simActualWork}일 + 실제비작업 ${sim.simActualNonWork}일`
-      };
-    }
-    return null;
-  });
-
+  // 3단계: 통합 타임라인 스케일 구성
   const maxActualEndDay = actuals.reduce((m, a) => a ? Math.max(m, a.aEndDay) : m, 0);
   const displayTotalDays = Math.max(totalCalendarDays, maxActualEndDay);
   const isExtended = displayTotalDays > totalCalendarDays;
@@ -584,7 +494,7 @@ function renderGanttChart(projectId) {
     const seqNum = idx + 1; // 공종 번호 (1, 2, 3...)
 
     const isNarrow = parseFloat(workWidthPct) < 3.5;
-    const labelText = `${seqNum} (${item.netDays}일)`; // 번호(일수) 간결 표기
+    const labelText = `${seqNum} (${item.netDays}일)`; // 막대 내부 잘림 방지를 위해 번호(일수)로 간결 표기
 
     combinedPlannedBars.push(`
       <div class="gantt-bar-work${isNarrow ? ' bar-label-outside' : ''}" 
@@ -606,6 +516,7 @@ function renderGanttChart(projectId) {
     const statusLabel = actual ? actual.statusLabel : '미착공';
     const summaryPlain = actual ? actual.summaryPlain : '';
 
+    // 하단 공종 목록 범례 (번호 + 색상 1:1 매칭)
     chipsHtml.push(`
       <div class="gantt-item-chip">
         <span class="chip-num">${seqNum}.</span>
@@ -649,36 +560,22 @@ function renderGanttChart(projectId) {
     </div>
   `;
 
-  // 4단계: 실적 바 (전체 공종 통합) 생성
+  // 4단계: 실적 막대 생성 (실적 입력 데이터 기준)
   let totalActWork = 0;
   let totalActNonWork = 0;
+  const actualBarsHtml = [];
+
   actuals.forEach(a => {
     if (a) {
       totalActWork += a.actualWork;
       totalActNonWork += a.actualNonWork;
+      actualBarsHtml.push(renderActualBarHtml(a, displayTotalDays, 22, 4));
     }
   });
 
   let actualBarContent = '';
   if (itemsWithActual > 0) {
-    const actWorkPct = ((totalActWork / displayTotalDays) * 100).toFixed(2);
-    const actNonWorkPct = ((totalActNonWork / displayTotalDays) * 100).toFixed(2);
-    const totalSpent = (totalActWork + totalActNonWork).toFixed(1);
-
-    actualBarContent = `
-      <div class="timeline-bar-flex" style="border: 1px dashed #cbd5e1; background: #f8fafc; height:100%;">
-        <div class="tb-segment tb-work-actual" style="width:${actWorkPct}%;" title="실제 누적 순작업: ${totalActWork}일 완료">
-          실적 ${totalActWork}일
-        </div>
-        ${totalActNonWork > 0 ? `
-        <div class="tb-segment tb-nonwork-actual" style="width:${actNonWorkPct}\%;" title="품질관리 탭 실제 기상 비작업: +${totalActNonWork}일 발생 (폭염 2.0일, 강우/강풍 0.5일)">
-          실제비작업 +${totalActNonWork}일
-        </div>` : ''}
-        <div style="flex:1; display:flex; align-items:center; padding-left:10px; font-size:11px; color:#94a3b8; white-space:nowrap;">
-          잔여 공정 대기중 (실제 소요: ${totalSpent}일)
-        </div>
-      </div>
-    `;
+    actualBarContent = actualBarsHtml.join('');
   } else {
     actualBarContent = `<div style="color:#94a3b8; font-size:11.5px; line-height:34px; padding-left:10px;">입력된 실적이 없습니다. 하단 공종에서 [실적 입력]을 진행해주세요.</div>`;
   }
@@ -701,6 +598,7 @@ function renderGanttChart(projectId) {
   body.innerHTML = plannedRowHtml + combinedRowHtml + chipListHtml + editPanelsHtml.join('');
 }
 
+// 공종별 실적 원시 데이터 계산
 function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   if (!item.actualStart || !projStart) return null;
 
@@ -744,6 +642,7 @@ function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
   };
 }
 
+// 겹치는 실적 구간을 레인(세로 줄)으로 배정
 function assignLanes(entries) {
   const sorted = [...entries].sort((a, b) => a.aStartDay - b.aStartDay);
   const laneEnds = [];
@@ -756,6 +655,7 @@ function assignLanes(entries) {
   return Math.max(1, laneEnds.length);
 }
 
+// 실적 원시 데이터 → 실제 화면에 그릴 막대 HTML
 function renderActualBarHtml(a, displayTotalDays, rowH, rowGap) {
   const leftPct = Math.max(0, (a.aStartDay / displayTotalDays) * 100).toFixed(2);
   const workWidthPct = Math.max(1.2, ((a.actualWork / displayTotalDays) * 100)).toFixed(2);
@@ -826,8 +726,8 @@ function openNewProjectModal() {
   document.getElementById('modal-project-title').textContent = '신규 현장 추가';
   document.getElementById('m-inp-id').value = '';
   document.getElementById('m-inp-name').value = '';
-  document.getElementById('m-inp-start').value = '2026-08-01';
-  document.getElementById('m-inp-end').value = '2026-11-18';
+  document.getElementById('m-inp-start').value = '2026-03-01';
+  document.getElementById('m-inp-end').value = '2027-02-28';
   document.getElementById('m-inp-addr').value = '';
   document.getElementById('m-inp-desc').value = '';
   document.getElementById('addr-match-guide').innerHTML = '';
@@ -842,8 +742,8 @@ function openEditProjectModal(pid) {
   document.getElementById('modal-project-title').textContent = '현장 정보 수정';
   document.getElementById('m-inp-id').value = proj.id;
   document.getElementById('m-inp-name').value = proj.name || '';
-  document.getElementById('m-inp-start').value = proj.startDate || proj.start || '2026-08-01';
-  document.getElementById('m-inp-end').value = proj.endDate || proj.end || '2026-11-18';
+  document.getElementById('m-inp-start').value = proj.startDate || proj.start || '2026-03-01';
+  document.getElementById('m-inp-end').value = proj.endDate || proj.end || '2027-02-28';
   document.getElementById('m-inp-addr').value = proj.addr || '';
   document.getElementById('m-inp-desc').value = proj.desc || '';
   
@@ -877,6 +777,7 @@ function saveNewProject() {
   if (!db.projects) db.projects = [];
 
   if (pid) {
+    // 기존 현장 수정
     const pIdx = db.projects.findIndex(p => p.id === pid);
     if (pIdx !== -1) {
       db.projects[pIdx].name = name;
@@ -887,6 +788,7 @@ function saveNewProject() {
       db.projects[pIdx].desc = desc;
     }
   } else {
+    // 신규 현장 등록
     const newProject = {
       id: 'P_' + Date.now(),
       name: name,
