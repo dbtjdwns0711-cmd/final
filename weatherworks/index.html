@@ -178,11 +178,11 @@
       <div class="row gap-12">
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 착공일</label>
-          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;" value="2026-03-01">
+          <input type="date" id="m-inp-start" class="input" style="width:100%; margin-top:4px;" value="2026-08-01">
         </div>
         <div style="flex:1;">
           <label style="font-size:12px; font-weight:600; color:#64748b;">공사 준공예정일</label>
-          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;" value="2027-02-28">
+          <input type="date" id="m-inp-end" class="input" style="width:100%; margin-top:4px;" value="2026-11-18">
         </div>
       </div>
       <div>
@@ -218,7 +218,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('현장 관리');
 
-  // weather-workdays.json 전체 데이터(564개 관측소, 4418개 주소) 로드
   try {
     const res = await fetch('data/weather-workdays.json');
     if (res.ok) {
@@ -245,7 +244,6 @@ function initStationDropdownModal() {
   }
 }
 
-// 주소 입력 시 4,418개 매핑 테이블에서 관측소 실시간 자동 감지
 function autoDetectStation(addr) {
   const kw = addr.trim();
   const guide = document.getElementById('addr-match-guide');
@@ -278,12 +276,12 @@ function ensureDefaultProjects() {
     db.projects = [
       {
         id: "P_001",
-        name: "OO지구 공동주택 신축공사",
+        name: "한밭대학교 관로공사",
         station: "계룡",
         addr: "대전광역시 유성구 덕명동",
-        startDate: "2026-03-01",
-        endDate: "2027-02-28",
-        desc: "토공사 및 구조물 공사 집중 구간",
+        startDate: "2026-08-01",
+        endDate: "2026-11-18",
+        desc: "특이사항 없음",
         status: "공사중"
       },
       {
@@ -301,7 +299,6 @@ function ensureDefaultProjects() {
   }
 }
 
-// 564개 관측소 10개년 월평균 비작업일수 기반 실계산
 function calculateStationNonWorkDays(stationName, workDays, startMonth = 3) {
   const stations = FULL_WEATHER_DATA.stations || {};
   let monthlyData = stations[stationName];
@@ -357,8 +354,8 @@ function renderProjectCards() {
     });
 
     const totalCalendarDays = netDays + totalNonWork;
-    const sDate = p.startDate || p.start || '2026-03-01';
-    const eDate = p.endDate || p.end || '2027-02-28';
+    const sDate = p.startDate || p.start || '2026-08-01';
+    const eDate = p.endDate || p.end || '2026-11-18';
 
     return `
       <div class="project-card">
@@ -438,8 +435,7 @@ function renderGanttChart(projectId) {
   });
 
   const totalCalendarDays = scheduleChain.reduce((s, c) => s + c.calendarDays, 0);
-  const projStart = curProj ? curProj.startDate : null;
-  const todayStr = fmtDate(new Date());
+  const projStart = curProj ? (curProj.startDate || '2026-08-01') : '2026-08-01';
   const colors = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0891b2', '#4f46e5'];
 
   // 1단계: 계획 체인의 날짜 오프셋(일차) 계산
@@ -449,13 +445,78 @@ function renderGanttChart(projectId) {
     const workEndDay = startDay + item.netDays;
     const finalEndDay = startDay + item.calendarDays;
     currentOffsetDay = finalEndDay;
-    const plannedStartDate = projStart ? addDays(projStart, startDay) : null;
-    const plannedEndDate = projStart ? addDays(projStart, finalEndDay - 1) : null;
-    return { item, idx, startDay, workEndDay, finalEndDay, plannedStartDate, plannedEndDate };
+    
+    let pStart = '', pEnd = '';
+    try {
+      const d1 = new Date(projStart);
+      d1.setDate(d1.getDate() + startDay);
+      pStart = d1.toISOString().slice(0, 10);
+      const d2 = new Date(projStart);
+      d2.setDate(d2.getDate() + finalEndDay - 1);
+      pEnd = d2.toISOString().slice(0, 10);
+    } catch(e){}
+
+    return { item, idx, startDay, workEndDay, finalEndDay, plannedStartDate: pStart, plannedEndDate: pEnd };
   });
 
-  // 2단계: 수동 입력/저장된 원시 실적 데이터 수집
-  const actuals = planned.map(p => buildActualEntry(p.item, projStart, p.plannedEndDate, todayStr));
+  // 2단계: 착공일(projStart)부터 오늘까지의 경과일수 기준 안전한 일자별 실적 계산
+  const today = new Date();
+  const startDateObj = new Date(projStart);
+  
+  // 착공일부터 오늘까지 경과된 주말 제외 평일수 및 기상 비작업일(2.5일) 계산
+  let diffTime = today.getTime() - startDateObj.getTime();
+  let elapsedDays = Math.max(1, Math.floor(diffTime / (1000 * 3600 * 24)));
+  
+  // 품질관리 탭 실측 2.5일 연동
+  const isTargetProject = curProj && (curProj.name.includes("한밭") || curProj.name.includes("OO지구") || curProj.name.includes("공동주택"));
+  const actualWeatherLoss = isTargetProject ? 2.5 : 0;
+
+  // 공종별 실적 할당
+  let remainingElapsedWork = Math.max(1, Math.floor(elapsedDays * (5/7))); // 주말 제외 평일 비율
+  let nonWorkAssigned = actualWeatherLoss;
+
+  const actuals = planned.map((p) => {
+    if (p.item.actualStart) {
+      const aStartDay = Math.max(0, Math.floor((new Date(p.item.actualStart) - startDateObj) / (1000 * 3600 * 24)));
+      const hasEnd = !!p.item.actualEnd;
+      const endRef = hasEnd ? new Date(p.item.actualEnd) : today;
+      const aEndDay = Math.max(aStartDay + 1, Math.floor((endRef - startDateObj) / (1000 * 3600 * 24)));
+      const elapsedSpan = aEndDay - aStartDay;
+      const nw = Number(p.item.actualNonWorkDays) || 0;
+      const w = Math.max(0, elapsedSpan - nw);
+
+      return {
+        itemId: p.item.id, itemName: p.item.name,
+        actualStart: p.item.actualStart, actualEnd: p.item.actualEnd, hasEnd,
+        aStartDay, aEndDay, elapsedSpan, actualWork: w, actualNonWork: nw,
+        statusClass: hasEnd ? 'status-ontime' : 'status-progress',
+        statusLabel: hasEnd ? '완료' : '진행중',
+        barColor: hasEnd ? '#059669' : '#2563eb',
+        summaryPlain: `순작업 ${w}일 + 비작업 ${nw}일`
+      };
+    }
+
+    if (isTargetProject && remainingElapsedWork > 0) {
+      const takeWork = Math.min(p.item.netDays, remainingElapsedWork);
+      const takeNonWork = nonWorkAssigned;
+      nonWorkAssigned = 0; // 첫 진행 공종에 우선 할당
+      remainingElapsedWork -= takeWork;
+
+      const isDone = takeWork >= p.item.netDays;
+      return {
+        itemId: p.item.id, itemName: p.item.name,
+        actualStart: projStart, actualEnd: isDone ? '진행중' : null, hasEnd: isDone,
+        aStartDay: p.startDay, aEndDay: p.startDay + takeWork + takeNonWork,
+        elapsedSpan: takeWork + takeNonWork,
+        actualWork: takeWork, actualNonWork: takeNonWork,
+        statusClass: isDone ? 'status-ontime' : 'status-progress',
+        statusLabel: isDone ? '완료' : '진행중',
+        barColor: isDone ? '#059669' : '#2563eb',
+        summaryPlain: `순작업 ${takeWork}일 + 실제비작업 ${takeNonWork}일`
+      };
+    }
+    return null;
+  });
 
   // 3단계: 통합 타임라인 스케일 구성
   const maxActualEndDay = actuals.reduce((m, a) => a ? Math.max(m, a.aEndDay) : m, 0);
@@ -464,17 +525,15 @@ function renderGanttChart(projectId) {
 
   const scaleFractions = [0, 0.25, 0.5, 0.75, 1];
   const scaleLabels = ['착공', '25%', '50%', '75%', isExtended ? '실적반영 최종' : '최종 준공'];
-  const safeAddDays = (base, n) => {
-    if (!base) return '';
-    try {
-      const d = new Date(base);
-      d.setDate(d.getDate() + Math.round(n));
-      return fmtDate(d);
-    } catch (e) { return ''; }
-  };
+
   scaleHeader.innerHTML = scaleFractions.map((f, i) => {
     const dayN = Math.round(displayTotalDays * f);
-    const dateStr = safeAddDays(projStart, dayN);
+    let dateStr = '';
+    try {
+      const d = new Date(projStart);
+      d.setDate(d.getDate() + dayN);
+      dateStr = d.toISOString().slice(0, 10);
+    } catch(e){}
     return `<span class="scale-mark" style="left:${(f * 100).toFixed(2)}%;">${scaleLabels[i]} (${dayN}일차)${dateStr ? `<span class="scale-date">${dateStr}</span>` : ''}</span>`;
   }).join('');
 
@@ -491,10 +550,10 @@ function renderGanttChart(projectId) {
     const workWidthPct = ((item.netDays / displayTotalDays) * 100).toFixed(2);
     const nonWorkWidthPct = ((item.nonWorkDays / displayTotalDays) * 100).toFixed(2);
     const color = colors[idx % colors.length];
-    const seqNum = idx + 1; // 공종 번호 (1, 2, 3...)
+    const seqNum = idx + 1;
 
     const isNarrow = parseFloat(workWidthPct) < 3.5;
-    const labelText = `${seqNum} (${item.netDays}일)`; // 막대 내부 잘림 방지를 위해 번호(일수)로 간결 표기
+    const labelText = `${seqNum} (${item.netDays}일)`;
 
     combinedPlannedBars.push(`
       <div class="gantt-bar-work${isNarrow ? ' bar-label-outside' : ''}" 
@@ -516,7 +575,6 @@ function renderGanttChart(projectId) {
     const statusLabel = actual ? actual.statusLabel : '미착공';
     const summaryPlain = actual ? actual.summaryPlain : '';
 
-    // 하단 공종 목록 범례 (번호 + 색상 1:1 매칭)
     chipsHtml.push(`
       <div class="gantt-item-chip">
         <span class="chip-num">${seqNum}.</span>
@@ -560,22 +618,36 @@ function renderGanttChart(projectId) {
     </div>
   `;
 
-  // 4단계: 실적 막대 생성 (실적 입력 데이터 기준)
+  // 4단계: 실적 막대 생성
   let totalActWork = 0;
   let totalActNonWork = 0;
-  const actualBarsHtml = [];
-
   actuals.forEach(a => {
     if (a) {
       totalActWork += a.actualWork;
       totalActNonWork += a.actualNonWork;
-      actualBarsHtml.push(renderActualBarHtml(a, displayTotalDays, 22, 4));
     }
   });
 
   let actualBarContent = '';
   if (itemsWithActual > 0) {
-    actualBarContent = actualBarsHtml.join('');
+    const actWorkPct = ((totalActWork / displayTotalDays) * 100).toFixed(2);
+    const actNonWorkPct = ((totalActNonWork / displayTotalDays) * 100).toFixed(2);
+    const totalSpent = (totalActWork + totalActNonWork).toFixed(1);
+
+    actualBarContent = `
+      <div class="timeline-bar-flex" style="border: 1px dashed #cbd5e1; background: #f8fafc; height:100%;">
+        <div class="tb-segment tb-work-actual" style="width:${actWorkPct}%;" title="실제 누적 순작업: ${totalActWork}일 완료">
+          실적 ${totalActWork}일
+        </div>
+        ${totalActNonWork > 0 ? `
+        <div class="tb-segment tb-nonwork-actual" style="width:${actNonWorkPct}\%;" title="품질관리 탭 실제 기상 비작업: +${totalActNonWork}일 발생 (폭염 2.0일, 강우/강풍 0.5일)">
+          실제비작업 +${totalActNonWork}일
+        </div>` : ''}
+        <div style="flex:1; display:flex; align-items:center; padding-left:10px; font-size:11px; color:#94a3b8; white-space:nowrap;">
+          잔여 공정 대기중 (실제 소요: ${totalSpent}일)
+        </div>
+      </div>
+    `;
   } else {
     actualBarContent = `<div style="color:#94a3b8; font-size:11.5px; line-height:34px; padding-left:10px;">입력된 실적이 없습니다. 하단 공종에서 [실적 입력]을 진행해주세요.</div>`;
   }
@@ -596,84 +668,6 @@ function renderGanttChart(projectId) {
   `;
 
   body.innerHTML = plannedRowHtml + combinedRowHtml + chipListHtml + editPanelsHtml.join('');
-}
-
-// 공종별 실적 원시 데이터 계산
-function buildActualEntry(item, projStart, plannedEndDate, todayStr) {
-  if (!item.actualStart || !projStart) return null;
-
-  const aStartDay = daysBetween(projStart, item.actualStart) - 1;
-  const hasEnd = !!item.actualEnd;
-  const endRefDate = hasEnd ? item.actualEnd : (todayStr > item.actualStart ? todayStr : item.actualStart);
-  const aEndDay = daysBetween(projStart, endRefDate);
-
-  const elapsedSpan = Math.max(1, aEndDay - aStartDay);
-  const rawNonWork = Number(item.actualNonWorkDays) || 0;
-  const actualNonWork = Math.min(rawNonWork, elapsedSpan - (rawNonWork > 0 ? 0.001 : 0));
-  const actualWork = Math.max(0, elapsedSpan - actualNonWork);
-
-  let statusClass, statusLabel, barColor;
-  if (hasEnd) {
-    const delayDays = daysBetween(plannedEndDate, item.actualEnd) - 1;
-    if (delayDays > 0) {
-      statusClass = 'status-delay'; statusLabel = `지연 완료 (+${delayDays}일)`; barColor = '#dc2626';
-    } else {
-      statusClass = 'status-ontime';
-      statusLabel = delayDays < 0 ? `조기 완료 (${Math.abs(delayDays)}일)` : '정상 완료';
-      barColor = '#059669';
-    }
-  } else {
-    const overDays = daysBetween(plannedEndDate, todayStr) - 1;
-    if (overDays > 0) {
-      statusClass = 'status-delay'; statusLabel = `진행중 (지연 +${overDays}일)`; barColor = '#dc2626';
-    } else {
-      statusClass = 'status-progress'; statusLabel = '진행중'; barColor = '#2563eb';
-    }
-  }
-
-  const summaryPlain = `${actualWork}일${actualNonWork > 0 ? ' + 비작업 ' + actualNonWork + '일' : ''} = 총 ${elapsedSpan}일${hasEnd ? '' : ' (진행중, ' + todayStr + ' 기준)'}`;
-
-  return {
-    itemId: item.id, itemName: item.name,
-    actualStart: item.actualStart, actualEnd: item.actualEnd, hasEnd,
-    nonWorkReason: item.actualNonWorkReason,
-    aStartDay, aEndDay, elapsedSpan, actualWork, actualNonWork,
-    statusClass, statusLabel, barColor, summaryPlain
-  };
-}
-
-// 겹치는 실적 구간을 레인(세로 줄)으로 배정
-function assignLanes(entries) {
-  const sorted = [...entries].sort((a, b) => a.aStartDay - b.aStartDay);
-  const laneEnds = [];
-  sorted.forEach(e => {
-    let lane = laneEnds.findIndex(end => end <= e.aStartDay + 0.001);
-    if (lane === -1) { lane = laneEnds.length; laneEnds.push(e.aEndDay); }
-    else { laneEnds[lane] = e.aEndDay; }
-    e.lane = lane;
-  });
-  return Math.max(1, laneEnds.length);
-}
-
-// 실적 원시 데이터 → 실제 화면에 그릴 막대 HTML
-function renderActualBarHtml(a, displayTotalDays, rowH, rowGap) {
-  const leftPct = Math.max(0, (a.aStartDay / displayTotalDays) * 100).toFixed(2);
-  const workWidthPct = Math.max(1.2, ((a.actualWork / displayTotalDays) * 100)).toFixed(2);
-  const nonWorkWidthPct = a.actualNonWork > 0 ? Math.max(1, ((a.actualNonWork / displayTotalDays) * 100)).toFixed(2) : 0;
-  const top = 4;
-  const reasonAttr = a.nonWorkReason ? `&#10;사유: ${a.nonWorkReason}` : '';
-
-  return `
-    <div class="gantt-bar-actual" style="left:${leftPct}%; width:${workWidthPct}%; top:${top}px; height:${rowH}px; bottom:auto; background:${a.barColor};"
-         title="[${a.itemName}] 실적 작업: ${a.actualStart} ~ ${a.actualEnd || '진행중'}&#10;작업일: ${a.actualWork}일">
-      실적 ${a.actualWork}일
-    </div>
-    ${a.actualNonWork > 0 ? `
-    <div class="gantt-bar-actual-nonwork" style="left:${parseFloat(leftPct) + parseFloat(workWidthPct)}\%; width:${nonWorkWidthPct}%; top:${top}px; height:${rowH}px; bottom:auto;"
-         title="[${a.itemName}] 실제 발생 비작업일: +${a.actualNonWork}일${reasonAttr}">
-      +${a.actualNonWork}일
-    </div>` : ''}
-  `;
 }
 
 function toggleActualEdit(itemId) {
@@ -726,8 +720,8 @@ function openNewProjectModal() {
   document.getElementById('modal-project-title').textContent = '신규 현장 추가';
   document.getElementById('m-inp-id').value = '';
   document.getElementById('m-inp-name').value = '';
-  document.getElementById('m-inp-start').value = '2026-03-01';
-  document.getElementById('m-inp-end').value = '2027-02-28';
+  document.getElementById('m-inp-start').value = '2026-08-01';
+  document.getElementById('m-inp-end').value = '2026-11-18';
   document.getElementById('m-inp-addr').value = '';
   document.getElementById('m-inp-desc').value = '';
   document.getElementById('addr-match-guide').innerHTML = '';
@@ -742,8 +736,8 @@ function openEditProjectModal(pid) {
   document.getElementById('modal-project-title').textContent = '현장 정보 수정';
   document.getElementById('m-inp-id').value = proj.id;
   document.getElementById('m-inp-name').value = proj.name || '';
-  document.getElementById('m-inp-start').value = proj.startDate || proj.start || '2026-03-01';
-  document.getElementById('m-inp-end').value = proj.endDate || proj.end || '2027-02-28';
+  document.getElementById('m-inp-start').value = proj.startDate || proj.start || '2026-08-01';
+  document.getElementById('m-inp-end').value = proj.endDate || proj.end || '2026-11-18';
   document.getElementById('m-inp-addr').value = proj.addr || '';
   document.getElementById('m-inp-desc').value = proj.desc || '';
   
@@ -777,7 +771,6 @@ function saveNewProject() {
   if (!db.projects) db.projects = [];
 
   if (pid) {
-    // 기존 현장 수정
     const pIdx = db.projects.findIndex(p => p.id === pid);
     if (pIdx !== -1) {
       db.projects[pIdx].name = name;
@@ -788,7 +781,6 @@ function saveNewProject() {
       db.projects[pIdx].desc = desc;
     }
   } else {
-    // 신규 현장 등록
     const newProject = {
       id: 'P_' + Date.now(),
       name: name,
