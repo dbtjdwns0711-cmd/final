@@ -103,7 +103,7 @@ function initPage() {
 
   document.getElementById('proj-title').textContent = `${project.name} 공정 상세분석`;
   document.getElementById('target-proj-name').textContent = project.name;
-  document.getElementById('proj-desc').textContent = `${project.location || '위치 미지정'} · 산출 작업량 기준 일정 현황`;
+  document.getElementById('proj-desc').textContent = `${project.location || project.addr || '위치 미지정'} · 산출 작업량 기준 일정 현황`;
   document.getElementById('proj-period').textContent = `${project.startDate} ~ ${project.endDate}`;
 
   renderGantt();
@@ -171,13 +171,79 @@ function renderCalendarPanel(project){
 }
 
 function updateProgress(taskId, val) {
-  const tasks = allTasksByProject[currentProjectId] || [];
-  const task = tasks.find(t => t.id === taskId);
-  if (task) {
-    task.progress = parseInt(val, 10);
-    localStorage.setItem('my_project_tasks_map', JSON.stringify(allTasksByProject));
-    renderGantt();
+  if (!allTasksByProject[currentProjectId]) allTasksByProject[currentProjectId] = [];
+  const tasks = allTasksByProject[currentProjectId];
+  const displayTasks = buildDisplayTasks();
+  const source = displayTasks.find(t => String(t.id) === String(taskId));
+  if (!source) return;
+
+  let task = tasks.find(t => String(t.id) === String(taskId));
+  if (!task) {
+    task = {
+      id: source.id,
+      sourceQuantityId: source.sourceQuantityId || null,
+      name: source.name,
+      start: source.start,
+      end: source.end,
+      days: source.days || 1
+    };
+    tasks.push(task);
   }
+  task.progress = parseInt(val, 10);
+  task.progressUpdatedAt = new Date().toISOString();
+  localStorage.setItem('my_project_tasks_map', JSON.stringify(allTasksByProject));
+  renderGantt();
+}
+
+function fmtDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date, days) {
+  const d = new Date(date.getTime());
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function buildQuantityTasks(db, project) {
+  const quantities = (db.quantities || []).filter(q => q.projectId === project.id);
+  let cursor = parseDate(project.startDate || project.start || new Date().toISOString().slice(0, 10));
+  return quantities.map(q => {
+    const days = Number(q.workDays) || (Number(q.quantity) && Number(q.dailyRate || q.dailyOutput) ? Math.ceil(Number(q.quantity) / Number(q.dailyRate || q.dailyOutput)) : 1);
+    const safeDays = Math.max(1, days);
+    const start = fmtDate(cursor);
+    const end = fmtDate(addDays(cursor, safeDays - 1));
+    cursor = addDays(cursor, safeDays);
+    return {
+      id: q.id,
+      sourceQuantityId: q.id,
+      generatedFromQuantity: true,
+      name: q.name || q.category || '산정 물량',
+      start,
+      end,
+      days: safeDays,
+      quantity: q.quantity,
+      unit: q.unit,
+      dailyRate: q.dailyRate || q.dailyOutput || null
+    };
+  });
+}
+
+function buildDisplayTasks() {
+  const db = loadDB();
+  const project = db.projects.find(x => x.id === currentProjectId) || db.projects[0];
+  if (!project) return [];
+  const savedTasks = allTasksByProject[currentProjectId] || [];
+  const quantityTasks = buildQuantityTasks(db, project);
+  const merged = [...savedTasks];
+  quantityTasks.forEach(qTask => {
+    const alreadyLinked = merged.some(t =>
+      String(t.sourceQuantityId || t.id) === String(qTask.sourceQuantityId) ||
+      (!t.sourceQuantityId && t.name === qTask.name)
+    );
+    if (!alreadyLinked) merged.push(qTask);
+  });
+  return merged;
 }
 
 function renderGantt() {
@@ -185,7 +251,7 @@ function renderGantt() {
   const rateEl = document.getElementById('overall-rate');
   const countEl = document.getElementById('task-count');
   const timelineText = document.getElementById('timeline-range-text');
-  const tasks = allTasksByProject[currentProjectId] || [];
+  const tasks = buildDisplayTasks();
 
   countEl.textContent = `${tasks.length}개`;
 
@@ -196,7 +262,7 @@ function renderGantt() {
         우측 상단의 <strong>[+ 공사 물량·작업량 산정하기]</strong> 버튼을 눌러 공종별 물량을 입력해 주세요.
       </div>
     `;
-    rateEl.textContent = '0%';
+    rateEl.textContent = '입력 대기';
     timelineText.textContent = '타임라인';
     return;
   }
@@ -207,8 +273,13 @@ function renderGantt() {
   const maxTime = Math.max(...ends);
   const totalRange = maxTime - minTime || 86400000;
 
-  const avg = Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / tasks.length);
-  rateEl.textContent = `${avg}%`;
+  const enteredTasks = tasks.filter(t => Number.isFinite(Number(t.progress)));
+  if (enteredTasks.length) {
+    const avg = Math.round(enteredTasks.reduce((sum, t) => sum + Number(t.progress), 0) / enteredTasks.length);
+    rateEl.textContent = enteredTasks.length === tasks.length ? `${avg}%` : `${avg}% (${enteredTasks.length}/${tasks.length})`;
+  } else {
+    rateEl.textContent = '입력 대기';
+  }
 
   const minDateStr = new Date(minTime).toISOString().slice(0, 10);
   const maxDateStr = new Date(maxTime).toISOString().slice(0, 10);
@@ -221,21 +292,25 @@ function renderGantt() {
     const left = Math.max(0, ((sTime - minTime) / totalRange) * 100);
     const width = Math.max(3, Math.min(100 - left, ((eTime - sTime + 86400000) / totalRange) * 100));
 
+    const hasProgress = Number.isFinite(Number(t.progress));
+    const progressValue = hasProgress ? Number(t.progress) : 0;
+    const progressLabel = hasProgress ? `${progressValue}%` : '입력 대기';
+    const quantityText = t.quantity ? ` · ${Number(t.quantity).toLocaleString()}${t.unit || ''}` : '';
     return `
       <div class="gantt-row">
         <div class="gantt-title">
           <div>${t.name}</div>
-          <div class="gantt-sub">${t.start} ~ ${t.end} (${t.days || 1}일 소요)</div>
+          <div class="gantt-sub">${t.start} ~ ${t.end} (${t.days || 1}일 소요${quantityText})</div>
         </div>
         <div class="gantt-track">
           <div class="gantt-bar-box" style="left: ${left}%; width: ${width}%;">
-            <div class="gantt-bar-fill" style="width: ${t.progress || 0}%;"></div>
+            <div class="gantt-bar-fill" style="width: ${progressValue}%;"></div>
           </div>
         </div>
         <div class="gantt-rate">
-          ${t.progress || 0}%
-          <input type="range" class="progress-slider" min="0" max="100" value="${t.progress || 0}" 
-                 onchange="updateProgress(${t.id}, this.value)">
+          ${progressLabel}
+          <input type="range" class="progress-slider" min="0" max="100" value="${progressValue}" 
+                 onchange='updateProgress(${JSON.stringify(String(t.id))}, this.value)'>
         </div>
       </div>
     `;
