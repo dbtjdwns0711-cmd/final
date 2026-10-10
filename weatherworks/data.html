@@ -81,10 +81,17 @@ function refreshCounts() {
 
 function exportData() {
   const db = loadDB();
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+  const exported = {
+    ...db,
+    exportedAt: new Date().toISOString(),
+    schemaVersion: 'final-weatherworks-v1',
+    sourceSite: 'final/weatherworks',
+    taskProgress: JSON.parse(localStorage.getItem('my_project_tasks_map') || '{}')
+  };
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exported, null, 2));
   const dl = document.createElement('a');
   dl.setAttribute("href", dataStr);
-  dl.setAttribute("download", `weatherworks_backup_${new Date().toISOString().slice(0, 10)}.json`);
+  dl.setAttribute("download", `weatherworks_final_backup_${new Date().toISOString().slice(0, 10)}.json`);
   document.body.appendChild(dl);
   dl.click();
   dl.remove();
@@ -98,7 +105,11 @@ function importData(e) {
     try {
       const parsed = JSON.parse(evt.target.result);
       if (parsed && (parsed.projects || parsed.quantities)) {
-        saveDB(parsed);
+        const { taskProgress, ...dbData } = parsed;
+        saveDB(dbData);
+        if (taskProgress && typeof taskProgress === 'object') {
+          localStorage.setItem('my_project_tasks_map', JSON.stringify(taskProgress));
+        }
         alert('데이터 복원이 성공적으로 완료되었습니다.');
         location.reload();
       } else {
