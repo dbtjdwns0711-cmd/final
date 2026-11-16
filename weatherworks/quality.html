@@ -197,19 +197,7 @@
           <div class="filter-controls">
             <div class="filter-item">
               <label>현장</label>
-              <select id="sel-site">
-                <option value="OO지구 공동주택 신축공사" selected>OO지구 공동주택 신축공사</option>
-                <option value="도로공사">도로공사</option>
-              </select>
-            </div>
-            <div class="filter-item">
-              <label>공종</label>
-              <select id="sel-work">
-                <option value="골조공사 (철근콘크리트 타설)" selected>골조공사 (철근콘크리트 타설)</option>
-                <option value="토공사 터파기 및 흙막이(CIP)">토공사 터파기 및 흙막이(CIP)</option>
-                <option value="부지 정지 및 가설 펜스 설치">부지 정지 및 가설 펜스 설치</option>
-                <option value="지상층 골조공사">지상층 골조공사</option>
-              </select>
+              <select id="sel-site"></select>
             </div>
             <div class="filter-item">
               <label>연 / 월</label>
@@ -218,8 +206,11 @@
                   <option value="2026" selected>2026년</option>
                 </select>
                 <select id="sel-month">
-                  <option value="9" selected>9월</option>
                   <option value="8">8월</option>
+                  <option value="9" selected>9월</option>
+                  <option value="10">10월</option>
+                  <option value="11">11월</option>
+                  <option value="12">12월</option>
                 </select>
               </div>
             </div>
@@ -257,7 +248,7 @@
 
         <!-- 달력 본체 -->
         <div class="cal-box">
-          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 · OO지구 공동주택 신축공사 · 골조공사 (철근콘크리트 타설)</div>
+          <div class="cal-header-title" id="calTitleDisplay">2026년 9월 · 현장</div>
           <div class="cal-weekday-grid">
             <div style="color:#dc2626;">일</div>
             <div>월</div>
@@ -323,6 +314,23 @@
 <script src="js/calc.js"></script>
 <script src="js/nav.js"></script>
 <script>
+// 현장관리 탭(db.projects)에 남아있는 현장 목록 동기화
+function initSiteDropdown() {
+  const siteSelect = document.getElementById('sel-site');
+  if (!siteSelect) return;
+
+  const db = typeof loadDB === 'function' ? loadDB() : { projects: [] };
+  const projects = db.projects || [];
+
+  if (projects.length > 0) {
+    siteSelect.innerHTML = projects.map((p, idx) => `
+      <option value="${p.id}" ${idx === 0 ? 'selected' : ''}>${p.name}</option>
+    `).join('');
+  } else {
+    siteSelect.innerHTML = '<option value="default">등록된 현장 없음</option>';
+  }
+}
+
 // 날짜 및 시간 정밀 추출 함수 (두 자리 일자/시간 우선 파싱 버그 수정)
 function parseRecordDateTime(rec) {
   if (!rec) return null;
@@ -360,6 +368,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리', { showProjectSelect: true });
 
+  // 현장관리 탭 현장 목록 로드
+  initSiteDropdown();
+
   let allRecords = [];
 
   try {
@@ -384,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     document.getElementById('sel-site').addEventListener('change', updateHandler);
-    document.getElementById('sel-work').addEventListener('change', updateHandler);
+    document.getElementById('sel-year').addEventListener('change', updateHandler);
     document.getElementById('sel-month').addEventListener('change', updateHandler);
 
   } catch (err) {
@@ -441,10 +452,8 @@ function buildCalendar(year, month, records) {
   grid.innerHTML = '';
 
   const siteSelect = document.getElementById('sel-site');
-  const siteName = siteSelect.options[siteSelect.selectedIndex].text;
-  const workSelect = document.getElementById('sel-work');
-  const workName = workSelect.options[workSelect.selectedIndex].text;
-  document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · ${siteName} · ${workName}`;
+  const siteName = siteSelect.options[siteSelect.selectedIndex] ? siteSelect.options[siteSelect.selectedIndex].text : '현장';
+  document.getElementById('calTitleDisplay').textContent = `${year}년 ${month}월 · ${siteName}`;
 
   // 1. 해당 연/월의 실측치를 일자별 시간대 배열로 그룹화
   const daysMap = {};
