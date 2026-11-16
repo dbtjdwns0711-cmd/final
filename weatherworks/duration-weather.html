@@ -117,39 +117,39 @@
               <thead>
                 <tr>
                   <th>기상 구분</th>
-                  <th>임계 기준치</th>
+                  <th>임계 기준치 (07~17시 근무기준)</th>
                   <th class="num">현장 실측</th>
                   <th style="text-align: center;">상태</th>
                 </tr>
               </thead>
               <tbody id="tbl-criteria-body">
                 <tr>
-                  <td><strong>강우</strong></td>
-                  <td class="muted">10.0 mm/일 이상</td>
+                  <td><strong>지속성 강우</strong></td>
+                  <td class="muted">2시간 연속 시간당 1.0mm 이상 (반일)</td>
                   <td class="num mono font-bold" id="crit-rain-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-rain-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>혹한</strong></td>
-                  <td class="muted">일최저 -4.0 ℃ 이하</td>
+                  <td><strong>혹한기 (한파)</strong></td>
+                  <td class="muted">일 최저기온 -12.0℃ 이하 (전일)</td>
                   <td class="num mono font-bold" id="crit-cold-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-cold-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>폭염</strong></td>
-                  <td class="muted">일최고 35.0 ℃ 이상</td>
+                  <td><strong>혹서기 (폭염)</strong></td>
+                  <td class="muted">체감온도(Tw) 35.0℃↑(반일) / 38.0℃↑(전일)</td>
                   <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">2.0 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-heat-badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
                 </tr>
                 <tr>
                   <td><strong>강풍</strong></td>
-                  <td class="muted">순간최대 10.0 m/s 이상</td>
+                  <td class="muted">순간/시간 풍속 15.0m/s 이상 (반일)</td>
                   <td class="num mono font-bold" id="crit-wind-count">0.5 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-wind-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
                 <tr>
-                  <td><strong>강설</strong></td>
-                  <td class="muted">5.0 cm/일 이상</td>
+                  <td><strong>폭설 (적설)</strong></td>
+                  <td class="muted">일 최고 적설량 5.0cm 이상 (전일)</td>
                   <td class="num mono font-bold" id="crit-snow-count">0.0 일</td>
                   <td style="text-align: center;"><span class="badge" id="crit-snow-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
                 </tr>
@@ -197,9 +197,9 @@
       <!-- 안내 가이드 박스 -->
       <div class="guide-box">
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
-        <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다[cite: 1].</div>
-        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다[cite: 8].</div>
-        <div>• <strong>기상 요인별 판정</strong>: 강우, 혹한, 폭염, 강풍, 강설의 임계 기준치에 도달한 실측 시간을 일수(0.5일/1.0일 단위)로 정밀 집계합니다[cite: 8].</div>
+        <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다.</div>
+        <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다.</div>
+        <div>• <strong>기상 요인별 판정</strong>: [기상 판정 기준·공휴일] 공식 기준(주간 07:00~17:00 근무시간 기준 지속성 강우 2시간 연속 1.0mm↑, 강풍 15.0m/s↑, 폭염 체감온도 35.0℃/38.0℃↑, 한파 -12.0℃↓, 폭설 5.0cm↑)에 따라 0.5일/1.0일 단위로 정밀 집계합니다.</div>
       </div>
     </main>
   </div>
@@ -440,7 +440,7 @@ function displayProject(projectId) {
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:normal;">관측 대기</span>`;
   }
 
-  // 6. 기상 요인별 판정 기준 실시간 연동 (수정된 부분)
+  // 6. 기상 요인별 판정 기준 실시간 연동
   const crit = target.criteria;
   document.getElementById('crit-rain-count').innerText = `${crit.rain.toFixed(1)} 일`;
   document.getElementById('crit-cold-count').innerText = `${crit.cold.toFixed(1)} 일`;
