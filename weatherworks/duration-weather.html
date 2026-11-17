@@ -93,7 +93,7 @@
         </div>
       </div>
 
-      <!-- 상단 차트 및 기상 요인별 판정 기준 요약 -->
+      <!-- 상단 차트 및 기상 요인별 비작업일수 요약 -->
       <div class="dual-panel-grid">
         <div class="panel">
           <div class="panel-head row space-between items-center">
@@ -109,7 +109,7 @@
 
         <div class="panel">
           <div class="panel-head row space-between items-center">
-            <h3>기상 요인별 비작업 판정 기준</h3>
+            <h3>기상 요인별 비작업일수</h3>
             <span class="badge" id="lbl-monitoring-status" style="background:#eff6ff; color:#2563eb; font-weight:700;">실시간 감시</span>
           </div>
           <div class="table-wrap">
@@ -117,43 +117,47 @@
               <thead>
                 <tr>
                   <th>기상 구분</th>
-                  <th>임계 기준치 (07~17시 근무기준)</th>
                   <th class="num">현장 실측</th>
-                  <th style="text-align: center;">상태</th>
+                  <th style="text-align: center;">발생 여부</th>
                 </tr>
               </thead>
               <tbody id="tbl-criteria-body">
                 <tr>
                   <td><strong>지속성 강우</strong></td>
-                  <td class="muted">2시간 연속 시간당 1.0mm 이상 (반일)</td>
                   <td class="num mono font-bold" id="crit-rain-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" id="crit-rain-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-rain-badge" style="background:#f1f5f9; color:#64748b; font-weight:600;">미발생</span></td>
                 </tr>
                 <tr>
                   <td><strong>혹한기 (한파)</strong></td>
-                  <td class="muted">일 최저기온 -12.0℃ 이하 (전일)</td>
                   <td class="num mono font-bold" id="crit-cold-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" id="crit-cold-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-cold-badge" style="background:#f1f5f9; color:#64748b; font-weight:600;">미발생</span></td>
                 </tr>
                 <tr>
                   <td><strong>혹서기 (폭염)</strong></td>
-                  <td class="muted">체감온도(Tw) 35.0℃↑(반일) / 38.0℃↑(전일)</td>
-                  <td class="num mono font-bold" id="crit-heat-count" style="color:#dc2626;">2.0 일</td>
-                  <td style="text-align: center;"><span class="badge" id="crit-heat-badge" style="background:#fef2f2; color:#dc2626; font-weight:700;">주의</span></td>
+                  <td class="num mono font-bold" id="crit-heat-count" style="color:#2563eb;">2.0 일</td>
+                  <td style="text-align: center;"><span class="badge" id="crit-heat-badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">2일 발생</span></td>
                 </tr>
                 <tr>
                   <td><strong>강풍</strong></td>
-                  <td class="muted">순간/시간 풍속 15.0m/s 이상 (반일)</td>
-                  <td class="num mono font-bold" id="crit-wind-count">0.5 일</td>
-                  <td style="text-align: center;"><span class="badge" id="crit-wind-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td class="num mono font-bold" id="crit-wind-count" style="color:#2563eb;">0.5 일</td>
+                  <td style="text-align: center;"><span class="badge" id="crit-wind-badge" style="background:#eff6ff; color:#2563eb; font-weight:700;">0.5일 발생</span></td>
                 </tr>
                 <tr>
                   <td><strong>폭설 (적설)</strong></td>
-                  <td class="muted">일 최고 적설량 5.0cm 이상 (전일)</td>
                   <td class="num mono font-bold" id="crit-snow-count">0.0 일</td>
-                  <td style="text-align: center;"><span class="badge" id="crit-snow-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">양호</span></td>
+                  <td style="text-align: center;"><span class="badge" id="crit-snow-badge" style="background:#f1f5f9; color:#64748b; font-weight:600;">미발생</span></td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                  <td>
+                    <div>합계</div>
+                    <div class="muted" id="crit-total-sub" style="font-size: 11px; font-weight: normal;">평년 7.3일 대비</div>
+                  </td>
+                  <td class="num mono" id="crit-total-count" style="color:#0f172a;">2.5 일</td>
+                  <td style="text-align: center;"><span class="badge" id="crit-total-badge" style="background:#ecfdf5; color:#059669; font-weight:700;">평년보다 적음</span></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -199,7 +203,7 @@
         <h4>비작업일수 산정 및 모델 검증 가이드</h4>
         <div>• <strong>10개년 통계 예측치</strong>: 기상청 전국 564개 관측소의 10개년 기후 통계(weather-workdays.json)를 바탕으로, 현장에 매핑된 관측소의 월별 표준 비작업일수를 자동 산출합니다.</div>
         <div>• <strong>현장 실시간 실측치</strong>: [기상데이터 품질관리] 탭에서 수집된 현장 실측치가 연동되며, 데이터가 아직 수집되지 않은 현장(신규 등록 현장 등)은 '관측 예정(-)' 상태로 표출됩니다.</div>
-        <div>• <strong>기상 요인별 판정</strong>: [기상 판정 기준·공휴일] 공식 기준(주간 07:00~17:00 근무시간 기준 지속성 강우 2시간 연속 1.0mm↑, 강풍 15.0m/s↑, 폭염 체감온도 35.0℃/38.0℃↑, 한파 -12.0℃↓, 폭설 5.0cm↑)에 따라 0.5일/1.0일 단위로 정밀 집계합니다.</div>
+        <div>• <strong>기상 요인별 비작업일수</strong>: [기상 판정 기준·공휴일] 공식 기준에 따라 각 기상 요인별 발생 일수를 산출하며, 전체 합계를 해당 관측소의 10개년 평년 통계와 비교하여 '평년보다 많음 / 적음'을 판정합니다.</div>
       </div>
     </main>
   </div>
@@ -312,6 +316,46 @@ function buildProjectList() {
 window.handleProjectChange = function(projectId) {
   displayProject(projectId);
 };
+
+// 개별 기상 요인 행 업데이트 (미발생 / N일 발생)
+function updateWeatherFactorRow(key, days, isCollected) {
+  const countEl = document.getElementById(`crit-${key}-count`);
+  const badgeEl = document.getElementById(`crit-${key}-badge`);
+
+  if (!isCollected) {
+    if (countEl) {
+      countEl.innerText = '-';
+      countEl.style.color = '#94a3b8';
+    }
+    if (badgeEl) {
+      badgeEl.innerText = '관측 대기';
+      badgeEl.style.background = '#f1f5f9';
+      badgeEl.style.color = '#64748b';
+      badgeEl.style.fontWeight = 'normal';
+    }
+    return;
+  }
+
+  if (countEl) {
+    countEl.innerText = `${days.toFixed(1)} 일`;
+    countEl.style.color = days > 0 ? '#2563eb' : '';
+  }
+
+  if (badgeEl) {
+    if (days > 0) {
+      const label = Number.isInteger(days) ? `${days}일 발생` : `${days.toFixed(1)}일 발생`;
+      badgeEl.innerText = label;
+      badgeEl.style.background = '#eff6ff';
+      badgeEl.style.color = '#2563eb';
+      badgeEl.style.fontWeight = '700';
+    } else {
+      badgeEl.innerText = '미발생';
+      badgeEl.style.background = '#f1f5f9';
+      badgeEl.style.color = '#64748b';
+      badgeEl.style.fontWeight = '600';
+    }
+  }
+}
 
 function displayProject(projectId) {
   const target = projectsData.find(p => p.id === projectId) || projectsData[0];
@@ -440,24 +484,54 @@ function displayProject(projectId) {
     document.getElementById('tbl-foot-status').innerHTML = `<span class="badge" style="background:#f1f5f9; color:#64748b; font-weight:normal;">관측 대기</span>`;
   }
 
-  // 6. 기상 요인별 판정 기준 실시간 연동
+  // 6. 기상 요인별 비작업일수 (개별: 미발생 / N일 발생, 합계: 평년보다 많음 / 적음)
   const crit = target.criteria;
-  document.getElementById('crit-rain-count').innerText = `${crit.rain.toFixed(1)} 일`;
-  document.getElementById('crit-cold-count').innerText = `${crit.cold.toFixed(1)} 일`;
-  document.getElementById('crit-heat-count').innerText = `${crit.heat.toFixed(1)} 일`;
-  document.getElementById('crit-wind-count').innerText = `${crit.wind.toFixed(1)} 일`;
-  document.getElementById('crit-snow-count').innerText = `${crit.snow.toFixed(1)} 일`;
+  updateWeatherFactorRow('rain', crit.rain, target.isCollected);
+  updateWeatherFactorRow('cold', crit.cold, target.isCollected);
+  updateWeatherFactorRow('heat', crit.heat, target.isCollected);
+  updateWeatherFactorRow('wind', crit.wind, target.isCollected);
+  updateWeatherFactorRow('snow', crit.snow, target.isCollected);
 
-  const heatBadge = document.getElementById('crit-heat-badge');
-  if (heatBadge) {
-    if (crit.heat > 0) {
-      heatBadge.innerText = '주의';
-      heatBadge.style.background = '#fef2f2';
-      heatBadge.style.color = '#dc2626';
-    } else {
-      heatBadge.innerText = '양호';
-      heatBadge.style.background = '#ecfdf5';
-      heatBadge.style.color = '#059669';
+  const critTotalSub = document.getElementById('crit-total-sub');
+  const critTotalCount = document.getElementById('crit-total-count');
+  const critTotalBadge = document.getElementById('crit-total-badge');
+
+  if (validCount > 0) {
+    const critSum = crit.rain + crit.cold + crit.heat + crit.wind + crit.snow;
+    if (critTotalSub) critTotalSub.innerText = `평년 ${activePred.toFixed(1)}일 대비`;
+    if (critTotalCount) {
+      critTotalCount.innerText = `${critSum.toFixed(1)} 일`;
+      critTotalCount.style.color = '#0f172a';
+    }
+    if (critTotalBadge) {
+      if (critSum > activePred + 0.05) {
+        critTotalBadge.innerText = '평년보다 많음';
+        critTotalBadge.style.background = '#fef2f2';
+        critTotalBadge.style.color = '#dc2626';
+        critTotalBadge.style.fontWeight = '700';
+      } else if (critSum < activePred - 0.05) {
+        critTotalBadge.innerText = '평년보다 적음';
+        critTotalBadge.style.background = '#ecfdf5';
+        critTotalBadge.style.color = '#059669';
+        critTotalBadge.style.fontWeight = '700';
+      } else {
+        critTotalBadge.innerText = '평년 수준';
+        critTotalBadge.style.background = '#eff6ff';
+        critTotalBadge.style.color = '#2563eb';
+        critTotalBadge.style.fontWeight = '700';
+      }
+    }
+  } else {
+    if (critTotalSub) critTotalSub.innerText = '수집 후 평년 비교';
+    if (critTotalCount) {
+      critTotalCount.innerText = '-';
+      critTotalCount.style.color = '#94a3b8';
+    }
+    if (critTotalBadge) {
+      critTotalBadge.innerText = '관측 대기';
+      critTotalBadge.style.background = '#f1f5f9';
+      critTotalBadge.style.color = '#64748b';
+      critTotalBadge.style.fontWeight = 'normal';
     }
   }
 
