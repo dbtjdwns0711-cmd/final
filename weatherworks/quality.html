@@ -169,9 +169,11 @@
     margin-top: 4px;
   }
   .no-data-text {
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
     color: #94a3b8;
     margin-top: 14px;
+    margin-bottom: 8px;
     text-align: center;
   }
 </style>
@@ -331,7 +333,7 @@ function initSiteDropdown() {
   }
 }
 
-// 날짜 및 시간 정밀 추출 함수 (두 자리 일자/시간 우선 파싱 버그 수정)
+// 날짜 및 시간 정밀 추출 함수
 function parseRecordDateTime(rec) {
   if (!rec) return null;
   let str = rec.tm || rec.time || rec.datetime || rec.date || rec.timestamp || rec.dt;
@@ -345,7 +347,6 @@ function parseRecordDateTime(rec) {
   }
   if (!str || typeof str !== 'string') return null;
 
-  // 두 자리 일자(10~31)가 한 자리 일자(1~3)로 조기 매칭되지 않도록 greedy \d{1,2} 적용
   const m = str.match(/(20\d{2})[-/.년\s]+(\d{1,2})[-/.월\s]+(\d{1,2})(?:[T\s]+(\d{1,2})(?::(\d{2}))?)?/);
   if (!m) return null;
 
@@ -368,7 +369,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof renderSidebar === 'function') renderSidebar();
   if (typeof renderTopbar === 'function') renderTopbar('기상데이터 품질관리', { showProjectSelect: true });
 
-  // 현장관리 탭 현장 목록 로드
   initSiteDropdown();
 
   let allRecords = [];
@@ -382,10 +382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (rawJson.records && Array.isArray(rawJson.records)) allRecords = rawJson.records;
     else if (rawJson.data && Array.isArray(rawJson.data)) allRecords = rawJson.data;
 
-    // 1. 하단 최신 데이터 테이블 렌더링
     renderTable(allRecords);
-
-    // 2. 상단 캘린더 초기 렌더링 (기본 2026년 9월)
     buildCalendar(2026, 9, allRecords);
 
     const updateHandler = () => {
@@ -446,7 +443,7 @@ function renderTable(records) {
   tbody.innerHTML = rowsHtml.slice(0, 100).join('');
 }
 
-// Admin 원본 판정 기준에 따른 캘린더 생성 함수
+// Admin 원본 판정 기준 및 결측치(0/0/0) 제외 로직이 적용된 캘린더 생성 함수
 function buildCalendar(year, month, records) {
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
@@ -457,16 +454,13 @@ function buildCalendar(year, month, records) {
 
   // 1. 해당 연/월의 실측치를 일자별 시간대 배열로 그룹화
   const daysMap = {};
-  let totalMonthRecords = 0;
 
   records.forEach(rec => {
     const p = parseRecordDateTime(rec);
     if (!p) return;
     if (p.year !== year || p.month !== month) return;
 
-    totalMonthRecords++;
     const dateKey = p.dateKey;
-
     if (!daysMap[dateKey]) {
       daysMap[dateKey] = [];
     }
@@ -477,14 +471,14 @@ function buildCalendar(year, month, records) {
 
     daysMap[dateKey].push({
       hour: p.hour,
-      temp: t,
+      temp: isNaN(t) ? 0 : t,
       rain: isNaN(r) ? 0 : r,
       wind: isNaN(w) ? 0 : w,
       raw: rec
     });
   });
 
-  // 2. Admin 공식 판정 기준 적용 (오전/오후 독립 판정)
+  // 2. 일별 요약 및 결측치 판별 + Admin 공식 판정 기준 적용
   const dayEvaluations = {};
 
   Object.keys(daysMap).forEach(dateKey => {
@@ -501,6 +495,19 @@ function buildCalendar(year, month, records) {
       totalRain += item.rain;
       if (item.wind > maxWind) maxWind = item.wind;
     });
+
+    // 최고기온, 강수량, 풍속이 모두 0이면 결측치로 판정
+    const isMissing = hourList.length === 0 || (maxTemp === 0 && totalRain === 0 && maxWind === 0);
+
+    if (isMissing) {
+      dayEvaluations[dateKey] = {
+        isMissing: true,
+        recordCount: 0,
+        badHours: 0,
+        badDays: 0
+      };
+      return;
+    }
 
     // 주간 기준 근무시간 (07:00 ~ 17:00) 필터링
     const morningHours = hourList.filter(item => item.hour >= 7 && item.hour <= 12);
@@ -559,6 +566,8 @@ function buildCalendar(year, month, records) {
     }
 
     dayEvaluations[dateKey] = {
+      isMissing: false,
+      recordCount: hourList.length,
       maxTemp: maxTemp > -900 ? maxTemp.toFixed(1) : '-',
       totalRain: totalRain.toFixed(1),
       maxWind: maxWind.toFixed(1),
@@ -578,7 +587,8 @@ function buildCalendar(year, month, records) {
     grid.appendChild(emptyCell);
   }
 
-  const collectedDaysCount = Object.keys(dayEvaluations).length;
+  let collectedDaysCount = 0;
+  let validMonthRecords = 0;
   let totalBadHours = 0;
   let totalBadDaysCount = 0;
 
@@ -588,7 +598,7 @@ function buildCalendar(year, month, records) {
     const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
     const evalData = dayEvaluations[dateKey];
-    const hasData = !!evalData;
+    const isValidCollected = evalData && !evalData.isMissing;
 
     const cell = document.createElement('div');
     cell.className = 'cal-cell';
@@ -606,7 +616,10 @@ function buildCalendar(year, month, records) {
     let weatherHtml = '';
     let dotHtml = '<span class="legend-dot none"></span>';
 
-    if (hasData) {
+    if (isValidCollected) {
+      collectedDaysCount++;
+      validMonthRecords += evalData.recordCount;
+
       const isBadDay = evalData.badHours > 0;
       if (isBadDay) {
         totalBadHours += evalData.badHours;
@@ -629,8 +642,12 @@ function buildCalendar(year, month, records) {
         </div>
         ${noworkTag}
       `;
+    } else if (evalData && evalData.isMissing) {
+      // 0 / 0 / 0 결측치 날짜 표기
+      weatherHtml = `<div class="no-data-text">결측치</div>`;
     } else {
-      weatherHtml = `<div class="no-data-text">-<br><span style="font-size:10px;">미수집</span></div>`;
+      // 아예 레코드가 없는 날짜 표기
+      weatherHtml = `<div class="no-data-text" style="font-weight:normal;">-<br><span style="font-size:10px;">미수집</span></div>`;
     }
 
     cell.innerHTML = `
@@ -649,7 +666,7 @@ function buildCalendar(year, month, records) {
     grid.appendChild(cell);
   }
 
-  // 4. 상단 4대 요약 카드 수치 갱신
+  // 4. 상단 4대 요약 카드 수치 갱신 (결측치 제외 반영)
   document.getElementById('stat-collected-days').innerHTML = `${collectedDaysCount}<span style="font-size: 14px; font-weight: normal; color: #64748b;">일</span>`;
   document.getElementById('stat-collected-desc').textContent = `총 ${lastDate}일 중 ${collectedDaysCount}일 실측 완료`;
 
@@ -660,7 +677,7 @@ function buildCalendar(year, month, records) {
   document.getElementById('stat-impact-hours').innerHTML = `${totalBadHours}<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 시간</span>`;
   document.getElementById('stat-impact-days').textContent = `비작업 발생 ${totalBadDaysCount}일`;
 
-  document.getElementById('stat-total-records').innerHTML = `${totalMonthRecords}<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 건</span>`;
+  document.getElementById('stat-total-records').innerHTML = `${validMonthRecords}<span style="font-size: 14px; font-weight: normal; color: #64748b;"> 건</span>`;
 }
 </script>
 </body>
