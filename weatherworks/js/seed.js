@@ -1,6 +1,13 @@
 /* ==========================================================================
    seed.js — 최초 접속 시 채워지는 기본 현장 데이터 (한밭대학교 관로공사)
    ========================================================================== */
+   (function syncSeedVersion() {
+  const SEED_VERSION = 'hanbat-v1';
+  if (localStorage.getItem('ww_seed_version') !== SEED_VERSION) {
+    localStorage.clear();
+    localStorage.setItem('ww_seed_version', SEED_VERSION);
+  }
+})();
 
 function koreanHolidays2026(){
   return [
